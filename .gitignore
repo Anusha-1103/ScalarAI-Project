@@ -2,11 +2,14 @@
 node_modules/
 .next/
 dist/
+build/
+*.egg-info/
 coverage/
 playwright-report/
 test-results/
 .pnpm-store/
 .tools/
+.vercel/
 supabase/.temp/
 *.tsbuildinfo
 
