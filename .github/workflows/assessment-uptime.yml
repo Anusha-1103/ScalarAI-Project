@@ -23,7 +23,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cutoff=1786744458
+          cutoff=1787262958
           if [ "$(date -u +%s)" -ge "$cutoff" ]; then
             echo "active=false" >> "$GITHUB_OUTPUT"
             curl --fail-with-body --silent --show-error \
