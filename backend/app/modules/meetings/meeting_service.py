@@ -6,6 +6,7 @@ from app.modules.meetings.meeting_models import (
     ActionItem,
     Chapter,
     Meeting,
+    MeetingMoment,
     MeetingParticipant,
     MeetingSummary,
     Participant,
@@ -14,6 +15,7 @@ from app.modules.meetings.meeting_models import (
 )
 from app.modules.meetings.meeting_repository import MeetingRepository
 from app.modules.meetings.meeting_schemas import (
+    AccountRead,
     ActionItemCreate,
     ActionItemRead,
     ActionItemUpdate,
@@ -21,11 +23,14 @@ from app.modules.meetings.meeting_schemas import (
     MeetingCreate,
     MeetingDetail,
     MeetingListItem,
+    MeetingMomentCreate,
+    MeetingMomentRead,
     MeetingSummaryRead,
     MeetingUpdate,
     ParticipantRead,
     SearchResult,
     TranscriptSegmentRead,
+    TranscriptSegmentUpdate,
 )
 from app.modules.meetings.transcript_helper import build_summary, parse_transcript
 
@@ -33,6 +38,16 @@ from app.modules.meetings.transcript_helper import build_summary, parse_transcri
 class MeetingService:
     def __init__(self, repository: MeetingRepository) -> None:
         self.repository = repository
+
+    async def get_account(self) -> AccountRead:
+        account = await self.repository.resolve_account()
+        return AccountRead(
+            id=account.id,
+            display_name=account.display_name,
+            email=account.email,
+            avatar_url=account.avatar_url,
+            is_demo=account.auth_user_id is None,
+        )
 
     @staticmethod
     def _participant_read(participant: Participant, *, is_host: bool = False) -> ParticipantRead:
@@ -91,6 +106,17 @@ class MeetingService:
                 for chapter in meeting.chapters
             ],
             action_items=[self._action_item_read(item) for item in meeting.action_items],
+            moments=[
+                MeetingMomentRead(
+                    id=moment.id,
+                    segment_id=moment.segment_id,
+                    kind=moment.kind,
+                    note=moment.note,
+                    author_name=moment.author.display_name,
+                    created_at_utc=moment.created_at_utc,
+                )
+                for moment in meeting.moments
+            ],
         )
 
     def _action_item_read(self, item: ActionItem) -> ActionItemRead:
@@ -283,6 +309,60 @@ class MeetingService:
         if not item:
             raise ApplicationError("ACTION_ITEM_NOT_FOUND", "Action item does not exist", 404)
         await self.repository.delete(item)
+        await self.repository.commit()
+
+    async def update_transcript_segment(
+        self, segment_id: str, payload: TranscriptSegmentUpdate
+    ) -> TranscriptSegmentRead:
+        segment = await self.repository.get_transcript_segment(segment_id)
+        if not segment:
+            raise ApplicationError("SEGMENT_NOT_FOUND", "Transcript segment does not exist", 404)
+        segment.text = payload.text.strip()
+        await self.repository.commit()
+        saved = await self.repository.get_transcript_segment(segment_id)
+        return TranscriptSegmentRead(
+            id=saved.id,  # type: ignore[union-attr]
+            sequence_number=saved.sequence_number,  # type: ignore[union-attr]
+            start_in_seconds=saved.start_in_seconds,  # type: ignore[union-attr]
+            end_in_seconds=saved.end_in_seconds,  # type: ignore[union-attr]
+            text=saved.text,  # type: ignore[union-attr]
+            speaker=(self._participant_read(saved.speaker) if saved and saved.speaker else None),
+        )
+
+    async def create_moment(
+        self, meeting_id: str, payload: MeetingMomentCreate
+    ) -> MeetingMomentRead:
+        meeting = await self.repository.get_meeting(meeting_id)
+        if not meeting:
+            raise ApplicationError("MEETING_NOT_FOUND", "Meeting does not exist", 404)
+        segment = await self.repository.get_transcript_segment(payload.segment_id)
+        if not segment or segment.meeting_id != meeting_id:
+            raise ApplicationError("INVALID_SEGMENT", "Segment is not part of this meeting", 422)
+        account = await self.repository.resolve_account()
+        moment = MeetingMoment(
+            meeting_id=meeting_id,
+            segment_id=payload.segment_id,
+            author_account_id=account.id,
+            kind=payload.kind,
+            note=payload.note.strip() if payload.note else None,
+        )
+        self.repository.add(moment)
+        await self.repository.commit()
+        saved = await self.repository.get_moment(moment.id)
+        return MeetingMomentRead(
+            id=saved.id,  # type: ignore[union-attr]
+            segment_id=saved.segment_id,  # type: ignore[union-attr]
+            kind=saved.kind,  # type: ignore[union-attr]
+            note=saved.note,  # type: ignore[union-attr]
+            author_name=saved.author.display_name,  # type: ignore[union-attr]
+            created_at_utc=saved.created_at_utc,  # type: ignore[union-attr]
+        )
+
+    async def delete_moment(self, moment_id: str) -> None:
+        moment = await self.repository.get_moment(moment_id)
+        if not moment:
+            raise ApplicationError("MOMENT_NOT_FOUND", "Saved moment does not exist", 404)
+        await self.repository.delete(moment)
         await self.repository.commit()
 
     async def search(self, query_text: str, limit: int) -> list[SearchResult]:

@@ -26,6 +26,9 @@ class Account(TimestampMixin, Base):
     __tablename__ = "Account"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    auth_user_id: Mapped[str | None] = mapped_column(
+        "authUserId", String(36), unique=True, nullable=True, index=True
+    )
     display_name: Mapped[str] = mapped_column("displayName", String(120))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     avatar_url: Mapped[str | None] = mapped_column("avatarUrl", String(500), nullable=True)
@@ -75,6 +78,12 @@ class Meeting(TimestampMixin, Base):
         back_populates="meeting",
         cascade="all, delete-orphan",
         order_by="ActionItem.created_at_utc",
+        lazy="selectin",
+    )
+    moments: Mapped[list[MeetingMoment]] = relationship(
+        back_populates="meeting",
+        cascade="all, delete-orphan",
+        order_by="MeetingMoment.created_at_utc",
         lazy="selectin",
     )
 
@@ -127,6 +136,9 @@ class TranscriptSegment(TimestampMixin, Base):
 
     meeting: Mapped[Meeting] = relationship(back_populates="transcript_segments")
     speaker: Mapped[Participant | None] = relationship(lazy="joined")
+    moments: Mapped[list[MeetingMoment]] = relationship(
+        back_populates="segment", cascade="all, delete-orphan"
+    )
 
 
 class MeetingSummary(TimestampMixin, Base):
@@ -193,3 +205,27 @@ class ActionItem(TimestampMixin, Base):
 
     meeting: Mapped[Meeting] = relationship(back_populates="action_items")
     assignee: Mapped[Participant | None] = relationship(lazy="joined")
+
+
+class MeetingMoment(TimestampMixin, Base):
+    __tablename__ = "MeetingMoment"
+    __table_args__ = (
+        CheckConstraint("kind IN ('important', 'positive', 'concern')", name="moment_kind_valid"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    meeting_id: Mapped[str] = mapped_column(
+        "meetingId", ForeignKey("Meeting.id", ondelete="CASCADE"), index=True
+    )
+    segment_id: Mapped[str] = mapped_column(
+        "segmentId", ForeignKey("TranscriptSegment.id", ondelete="CASCADE"), index=True
+    )
+    author_account_id: Mapped[str] = mapped_column(
+        "authorAccountId", ForeignKey("Account.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(20), default="important")
+    note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    meeting: Mapped[Meeting] = relationship(back_populates="moments")
+    segment: Mapped[TranscriptSegment] = relationship(back_populates="moments")
+    author: Mapped[Account] = relationship(lazy="joined")

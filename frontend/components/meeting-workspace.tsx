@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  BarChart3,
   CalendarDays,
   Check,
   CheckCircle2,
@@ -31,19 +32,24 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AvatarStack } from "@/components/avatar-stack";
+import { TranscriptRow } from "@/components/transcript-row";
 import {
+  createMeetingMoment,
   createActionItem,
   deleteActionItem,
   deleteMeeting,
+  deleteMeetingMoment,
   getMeeting,
   updateActionItem,
   updateMeeting,
+  updateTranscriptSegment,
 } from "@/lib/api";
 import { formatMeetingDate, formatTimestamp } from "@/lib/format";
-import { findActiveSegmentIndex, splitHighlight, transcriptMatchIndexes } from "@/lib/transcript";
+import { buildMeetingInsights, matchesSmartFilter, SmartFilter } from "@/lib/meeting-insights";
+import { findActiveSegmentIndex, transcriptMatchIndexes } from "@/lib/transcript";
 import { ActionItem, MeetingDetail } from "@/lib/types";
 
-type DetailTab = "summary" | "actions" | "chapters";
+type DetailTab = "summary" | "actions" | "chapters" | "insights";
 
 function Player({
   duration,
@@ -173,15 +179,17 @@ export function MeetingWorkspace({ meetingId }: { meetingId: string }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [transcriptSearch, setTranscriptSearch] = useState("");
+  const [smartFilter, setSmartFilter] = useState<SmartFilter>("all");
   const [matchPosition, setMatchPosition] = useState(0);
   const [newAction, setNewAction] = useState("");
   const [editOpen, setEditOpen] = useState(false);
-  const segmentRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const segments = useMemo(() => meeting?.transcriptSegments ?? [], [meeting?.transcriptSegments]);
   const duration = meeting?.durationInSeconds ?? 0;
   const activeIndex = useMemo(() => findActiveSegmentIndex(segments, currentTime), [segments, currentTime]);
   const matches = useMemo(() => transcriptMatchIndexes(segments, transcriptSearch), [segments, transcriptSearch]);
+  const insights = useMemo(() => buildMeetingInsights(segments), [segments]);
 
   useEffect(() => {
     if (!playing) return;
@@ -227,6 +235,19 @@ export function MeetingWorkspace({ meetingId }: { meetingId: string }) {
   const deleteMeetingMutation = useMutation({
     mutationFn: () => deleteMeeting(meetingId),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["meetings"] }); router.push("/meetings"); toast.success("Meeting deleted"); },
+    onError: (error) => toast.error(error.message),
+  });
+  const transcriptMutation = useMutation({
+    mutationFn: ({ id, text }: { id: string; text: string }) => updateTranscriptSegment(id, text),
+    onSuccess: () => { refreshMeeting(); toast.success("Transcript updated"); },
+    onError: (error) => toast.error(error.message),
+  });
+  const momentMutation = useMutation({
+    mutationFn: async ({ segmentId, momentId }: { segmentId: string; momentId?: string }) => {
+      if (momentId) await deleteMeetingMoment(momentId);
+      else await createMeetingMoment(meetingId, segmentId);
+    },
+    onSuccess: () => { refreshMeeting(); toast.success("Saved moments updated"); },
     onError: (error) => toast.error(error.message),
   });
 
@@ -279,6 +300,7 @@ export function MeetingWorkspace({ meetingId }: { meetingId: string }) {
             <button className={tab === "summary" ? "active" : ""} onClick={() => setTab("summary")}><Sparkles size={15} />Summary</button>
             <button className={tab === "actions" ? "active" : ""} onClick={() => setTab("actions")}><ListChecks size={15} />Actions <span>{meeting.actionItems.length}</span></button>
             <button className={tab === "chapters" ? "active" : ""} onClick={() => setTab("chapters")}><ChevronDown size={15} />Chapters</button>
+            <button className={tab === "insights" ? "active" : ""} onClick={() => setTab("insights")}><BarChart3 size={15} />Insights</button>
           </nav>
 
           <div className="insights-scroll">
@@ -287,12 +309,15 @@ export function MeetingWorkspace({ meetingId }: { meetingId: string }) {
             {tab === "actions" && <div className="actions-content"><div className="section-heading"><span className="actions-icon"><ListChecks size={17} /></span><div><p className="eyebrow">Follow-through</p><h2>Action items</h2></div></div><form className="new-action" onSubmit={(event) => { event.preventDefault(); if (newAction.trim()) createActionMutation.mutate(newAction.trim()); }}><input value={newAction} onChange={(event) => setNewAction(event.target.value)} placeholder="Add an action item" aria-label="New action item" /><button className="icon-button" disabled={!newAction.trim() || createActionMutation.isPending} aria-label="Add action item"><Plus size={18} /></button></form><div className="action-list">{meeting.actionItems.map((item) => <ActionRow key={item.id} item={item} busy={actionMutation.isPending || removeActionMutation.isPending} onToggle={() => actionMutation.mutate({ id: item.id, completed: !item.isCompleted })} onEdit={(description) => actionMutation.mutate({ id: item.id, description })} onDelete={() => removeActionMutation.mutate(item.id)} />)}{!meeting.actionItems.length && <div className="mini-empty"><CheckCircle2 size={24} /><p>No open action items.</p></div>}</div></div>}
 
             {tab === "chapters" && <div className="chapters-content"><div className="section-heading"><span className="chapters-icon"><ChevronDown size={17} /></span><div><p className="eyebrow">Recording outline</p><h2>Chapters</h2></div></div><div className="chapter-list">{meeting.chapters.map((chapter, index) => <button key={chapter.id} onClick={() => seek(chapter.startInSeconds)}><span className="chapter-number">{String(index + 1).padStart(2, "0")}</span><span className="chapter-copy"><strong>{chapter.title}</strong><small>{formatTimestamp(chapter.startInSeconds)}</small></span><Play size={15} /></button>)}</div></div>}
+
+            {tab === "insights" && <div className="analytics-content"><div className="section-heading"><span className="analytics-icon"><BarChart3 size={17} /></span><div><p className="eyebrow">Conversation intelligence</p><h2>Meeting analytics</h2></div></div><div className="analytics-stats"><div><strong>{insights.sentiment}</strong><span>Conversation tone</span></div><div><strong>{insights.questions}</strong><span>Questions</span></div><div><strong>{meeting.moments.length}</strong><span>Saved moments</span></div></div><h3>Speaker talk time</h3><div className="speaker-bars">{insights.speakers.map((speaker, index) => <div key={speaker.name}><span><strong>{speaker.name}</strong><small>{speaker.percent}%</small></span><span className="speaker-bar"><i style={{ width: `${speaker.percent}%`, background: meeting.participants.find((person) => person.name === speaker.name)?.avatarColor ?? (index % 2 ? "#159979" : "#5b5bd6") }} /></span></div>)}</div><h3>Top topics</h3><div className="topic-cloud">{insights.topics.map((topic) => <button key={topic.word} onClick={() => { setTranscriptSearch(topic.word); setMobilePane("transcript"); }}>{topic.word}<span>{topic.count}</span></button>)}</div></div>}
           </div>
         </section>
 
         <section className={`transcript-panel ${mobilePane !== "transcript" ? "mobile-pane-hidden" : ""}`} aria-label="Transcript">
           <header className="transcript-header"><div><p className="eyebrow">Full conversation</p><h2>Transcript</h2></div><div className="transcript-search"><Search size={16} /><input value={transcriptSearch} onChange={(event) => setTranscriptSearch(event.target.value)} placeholder="Find in transcript" aria-label="Find in transcript" />{transcriptSearch && <><span>{matches.length ? `${matchPosition + 1}/${matches.length}` : "0/0"}</span><button onClick={() => moveMatch(-1)} disabled={!matches.length} aria-label="Previous match"><ChevronLeft size={16} /></button><button onClick={() => moveMatch(1)} disabled={!matches.length} aria-label="Next match"><ChevronRight size={16} /></button><button onClick={() => setTranscriptSearch("")} aria-label="Clear transcript search"><X size={15} /></button></>}</div></header>
-          <div className="transcript-list">{segments.map((segment, index) => <button ref={(node) => { segmentRefs.current[index] = node; }} type="button" className={`transcript-segment ${index === activeIndex ? "active" : ""} ${matches.includes(index) ? "has-match" : ""}`} key={segment.id} onClick={() => seek(segment.startInSeconds)}><span className="speaker-avatar" style={{ background: segment.speaker?.avatarColor ?? "#7b8494" }}>{segment.speaker?.name.slice(0, 1).toUpperCase() ?? "?"}</span><span className="segment-copy"><span className="segment-heading"><strong>{segment.speaker?.name ?? "Unknown speaker"}</strong><time>{formatTimestamp(segment.startInSeconds)}</time></span><span className="segment-text">{splitHighlight(segment.text, transcriptSearch).map((part, partIndex) => part.match ? <mark key={partIndex}>{part.value}</mark> : <span key={partIndex}>{part.value}</span>)}</span></span></button>)}</div>
+          <div className="smart-filters" role="group" aria-label="Smart transcript filters">{(["all", "questions", "tasks", "metrics"] as SmartFilter[]).map((filter) => <button key={filter} className={smartFilter === filter ? "active" : ""} onClick={() => setSmartFilter(filter)}>{filter === "all" ? `All ${segments.length}` : `${filter[0].toUpperCase()}${filter.slice(1)} ${insights[filter]}`}</button>)}</div>
+          <div className="transcript-list">{segments.map((segment, index) => <TranscriptRow ref={(node) => { segmentRefs.current[index] = node; }} key={segment.id} segment={segment} moment={meeting.moments.find((item) => item.segmentId === segment.id)} active={index === activeIndex} hasMatch={matches.includes(index)} hidden={!matchesSmartFilter(segment, smartFilter)} query={transcriptSearch} onSeek={() => seek(segment.startInSeconds)} onSave={(text) => transcriptMutation.mutate({ id: segment.id, text })} onToggleMoment={() => { const moment = meeting.moments.find((item) => item.segmentId === segment.id); momentMutation.mutate({ segmentId: segment.id, momentId: moment?.id }); }} />)}</div>
           <Player duration={duration} currentTime={currentTime} playing={playing} onPlayingChange={setPlaying} onSeek={seek} />
         </section>
       </div>

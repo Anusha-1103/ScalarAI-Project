@@ -4,10 +4,12 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.common.auth import CurrentPrincipal
 from app.modules.meetings.meeting_models import (
     Account,
     ActionItem,
     Meeting,
+    MeetingMoment,
     MeetingParticipant,
     Participant,
     TranscriptSegment,
@@ -15,8 +17,41 @@ from app.modules.meetings.meeting_models import (
 
 
 class MeetingRepository:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, principal: CurrentPrincipal | None = None) -> None:
         self.session = session
+        self.principal = principal
+        self.account_id: str | None = None
+
+    async def resolve_account(self) -> Account:
+        if self.account_id:
+            account = await self.session.get(Account, self.account_id)
+            if account:
+                return account
+        account = None
+        if self.principal and self.principal.auth_user_id:
+            account = await self.session.scalar(
+                select(Account).where(Account.auth_user_id == self.principal.auth_user_id)
+            )
+            if not account:
+                account = Account(
+                    auth_user_id=self.principal.auth_user_id,
+                    display_name=self.principal.display_name,
+                    email=self.principal.email,
+                )
+                self.session.add(account)
+                await self.session.flush()
+                await self.session.commit()
+        if not account:
+            account = await self.session.scalar(
+                select(Account).order_by(Account.created_at_utc).limit(1)
+            )
+        if not account:
+            raise RuntimeError("No application account is configured")
+        self.account_id = account.id
+        return account
+
+    async def _owner_id(self) -> str:
+        return (await self.resolve_account()).id
 
     @staticmethod
     def _with_detail() -> tuple:
@@ -26,6 +61,7 @@ class MeetingRepository:
             selectinload(Meeting.summary),
             selectinload(Meeting.chapters),
             selectinload(Meeting.action_items),
+            selectinload(Meeting.moments),
         )
 
     async def list_meetings(
@@ -39,7 +75,10 @@ class MeetingRepository:
         page: int,
         limit: int,
     ) -> tuple[list[Meeting], int]:
-        query: Select[tuple[Meeting]] = select(Meeting).where(Meeting.deleted_at_utc.is_(None))
+        owner_id = await self._owner_id()
+        query: Select[tuple[Meeting]] = select(Meeting).where(
+            Meeting.deleted_at_utc.is_(None), Meeting.owner_account_id == owner_id
+        )
 
         if search or participant:
             query = (
@@ -71,9 +110,14 @@ class MeetingRepository:
         return list(result.unique().all()), total
 
     async def get_meeting(self, meeting_id: str) -> Meeting | None:
+        owner_id = await self._owner_id()
         return await self.session.scalar(
             select(Meeting)
-            .where(Meeting.id == meeting_id, Meeting.deleted_at_utc.is_(None))
+            .where(
+                Meeting.id == meeting_id,
+                Meeting.deleted_at_utc.is_(None),
+                Meeting.owner_account_id == owner_id,
+            )
             .options(*self._with_detail())
         )
 
@@ -83,23 +127,49 @@ class MeetingRepository:
         )
 
     async def get_default_account(self) -> Account | None:
-        return await self.session.scalar(select(Account).order_by(Account.created_at_utc).limit(1))
+        return await self.resolve_account()
 
     async def search_transcripts(
         self, query_text: str, limit: int
     ) -> list[tuple[Meeting, TranscriptSegment]]:
         pattern = f"%{query_text.strip()}%"
+        owner_id = await self._owner_id()
         result = await self.session.execute(
             select(Meeting, TranscriptSegment)
             .join(TranscriptSegment, TranscriptSegment.meeting_id == Meeting.id)
-            .where(Meeting.deleted_at_utc.is_(None), TranscriptSegment.text.ilike(pattern))
+            .where(
+                Meeting.deleted_at_utc.is_(None),
+                Meeting.owner_account_id == owner_id,
+                TranscriptSegment.text.ilike(pattern),
+            )
             .order_by(Meeting.meeting_at_utc.desc(), TranscriptSegment.sequence_number)
             .limit(limit)
         )
         return list(result.all())
 
     async def get_action_item(self, action_item_id: str) -> ActionItem | None:
-        return await self.session.get(ActionItem, action_item_id)
+        owner_id = await self._owner_id()
+        return await self.session.scalar(
+            select(ActionItem)
+            .join(Meeting, Meeting.id == ActionItem.meeting_id)
+            .where(ActionItem.id == action_item_id, Meeting.owner_account_id == owner_id)
+        )
+
+    async def get_transcript_segment(self, segment_id: str) -> TranscriptSegment | None:
+        owner_id = await self._owner_id()
+        return await self.session.scalar(
+            select(TranscriptSegment)
+            .join(Meeting, Meeting.id == TranscriptSegment.meeting_id)
+            .where(TranscriptSegment.id == segment_id, Meeting.owner_account_id == owner_id)
+        )
+
+    async def get_moment(self, moment_id: str) -> MeetingMoment | None:
+        owner_id = await self._owner_id()
+        return await self.session.scalar(
+            select(MeetingMoment)
+            .join(Meeting, Meeting.id == MeetingMoment.meeting_id)
+            .where(MeetingMoment.id == moment_id, Meeting.owner_account_id == owner_id)
+        )
 
     def add(self, entity: object) -> None:
         self.session.add(entity)

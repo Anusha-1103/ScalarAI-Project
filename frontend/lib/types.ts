@@ -27,6 +27,15 @@ export interface TranscriptSegment {
   speaker: Participant | null;
 }
 
+export interface MeetingMoment {
+  id: string;
+  segmentId: string;
+  kind: "important" | "positive" | "concern";
+  note: string | null;
+  authorName: string;
+  createdAtUtc: string;
+}
+
 export interface ActionItem {
   id: string;
   description: string;
@@ -43,6 +52,7 @@ export interface MeetingDetail extends MeetingListItem {
   summary: { overview: string; keyPoints: string[] } | null;
   chapters: { id: string; title: string; startInSeconds: number }[];
   actionItems: ActionItem[];
+  moments: MeetingMoment[];
 }
 
 export interface ApiResponse<T> {
@@ -77,4 +87,12 @@ export interface SearchResult {
   startInSeconds: number | null;
   snippet: string;
   resultType: string;
+}
+
+export interface AccountProfile {
+  id: string;
+  displayName: string;
+  email: string;
+  avatarUrl: string | null;
+  isDemo: boolean;
 }

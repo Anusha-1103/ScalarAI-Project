@@ -16,12 +16,15 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { GlobalSearchDialog } from "@/components/global-search-dialog";
+import { getProfile } from "@/lib/api";
+import { createClient } from "@/lib/supabase/client";
 
 const primaryNavigation = [
   { label: "Meetings", icon: BookOpenText, href: "/meetings" },
@@ -30,15 +33,20 @@ const primaryNavigation = [
 ];
 
 const secondaryNavigation = [
-  { label: "Calendar", icon: CalendarDays },
-  { label: "Team", icon: Users },
-  { label: "Integrations", icon: Puzzle },
+  { label: "Calendar", icon: CalendarDays, href: "/calendar" },
+  { label: "People", icon: Users, href: "/team" },
+  { label: "Integrations", icon: Puzzle, href: "/integrations" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const profile = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+    enabled: !pathname.startsWith("/auth"),
+  });
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -50,7 +58,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  });
+  }, []);
+
+  if (pathname.startsWith("/auth")) return children;
+
+  const displayName = profile.data?.displayName ?? "Anusha";
+  const initial = displayName.slice(0, 1).toUpperCase();
+
+  async function signOut() {
+    const supabase = createClient();
+    if (!supabase) {
+      toast.info("Demo workspace stays signed in");
+      return;
+    }
+    await supabase.auth.signOut();
+    window.location.assign("/auth/sign-in");
+  }
 
   return (
     <div className="app-frame">
@@ -78,21 +101,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
           <p className="nav-label">Workspace</p>
-          {secondaryNavigation.map(({ label, icon: Icon }) => (
-            <button className="nav-item" key={label} type="button" title={`${label} — Coming soon`} onClick={() => toast.info(`${label} is coming soon`)}>
+          {secondaryNavigation.map(({ label, icon: Icon, href }) => (
+            <Link className={`nav-item ${pathname.startsWith(href) ? "nav-item-active" : ""}`} href={href} key={label} onClick={() => setMobileOpen(false)}>
               <Icon size={18} />
               <span>{label}</span>
-            </button>
+            </Link>
           ))}
         </nav>
 
         <div className="sidebar-footer">
           <button className="nav-item" type="button" onClick={() => toast.info("Help center is coming soon")}><CircleHelp size={18} /><span>Help</span></button>
-          <button className="nav-item" type="button" onClick={() => toast.info("Settings are coming soon")}><Settings size={18} /><span>Settings</span></button>
+          <Link className={`nav-item ${pathname.startsWith("/settings") ? "nav-item-active" : ""}`} href="/settings"><Settings size={18} /><span>Settings</span></Link>
           <div className="profile-row">
-            <span className="profile-avatar">A</span>
-            <span className="profile-copy"><strong>Anusha</strong><small>Personal workspace</small></span>
-            <ChevronLeft size={16} />
+            <span className="profile-avatar">{initial}</span>
+            <span className="profile-copy"><strong>{displayName}</strong><small>{profile.data?.isDemo ? "Demo workspace" : "Personal workspace"}</small></span>
+            <button className="profile-signout" type="button" onClick={signOut} title="Sign out" aria-label="Sign out"><ChevronLeft size={16} /></button>
           </div>
         </div>
       </aside>
@@ -109,7 +132,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
           <div className="topbar-actions">
             <button className="icon-button" aria-label="Notifications"><Bell size={19} /></button>
-            <span className="topbar-avatar">A</span>
+            <span className="topbar-avatar">{initial}</span>
           </div>
         </header>
         {children}

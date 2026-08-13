@@ -20,6 +20,14 @@ class ParticipantRead(ApiModel):
     is_host: bool = False
 
 
+class AccountRead(ApiModel):
+    id: str
+    display_name: str
+    email: str
+    avatar_url: str | None
+    is_demo: bool
+
+
 class TranscriptSegmentRead(ApiModel):
     id: str
     sequence_number: int
@@ -27,6 +35,25 @@ class TranscriptSegmentRead(ApiModel):
     end_in_seconds: float
     text: str
     speaker: ParticipantRead | None
+
+
+class TranscriptSegmentUpdate(ApiModel):
+    text: str = Field(min_length=1, max_length=10_000)
+
+
+class MeetingMomentRead(ApiModel):
+    id: str
+    segment_id: str
+    kind: str
+    note: str | None
+    author_name: str
+    created_at_utc: datetime
+
+
+class MeetingMomentCreate(ApiModel):
+    segment_id: str
+    kind: str = Field(default="important", pattern="^(important|positive|concern)$")
+    note: str | None = Field(default=None, max_length=500)
 
 
 class MeetingSummaryRead(ApiModel):
@@ -68,6 +95,7 @@ class MeetingDetail(MeetingListItem):
     summary: MeetingSummaryRead | None
     chapters: list[ChapterRead]
     action_items: list[ActionItemRead]
+    moments: list[MeetingMomentRead]
 
 
 class MeetingCreate(ApiModel):

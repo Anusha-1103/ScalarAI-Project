@@ -1,6 +1,6 @@
 import os
 
-os.environ["ECHONOTE_DATABASE_URL"] = "sqlite+aiosqlite:///./test_echonote.db"
+os.environ["ECHONOTE_DATABASE_URL"] = "sqlite+aiosqlite:///./test_echonote_moments.db"
 
 import pytest
 from fastapi.testclient import TestClient

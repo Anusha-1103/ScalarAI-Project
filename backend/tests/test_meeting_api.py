@@ -4,6 +4,10 @@ from fastapi.testclient import TestClient
 
 
 def test_seeded_meeting_library_and_detail(client: TestClient) -> None:
+    profile_response = client.get("/api/v1/me")
+    assert profile_response.status_code == 200
+    assert profile_response.json()["data"]["isDemo"] is True
+
     response = client.get("/api/v1/meetings")
 
     assert response.status_code == 200
@@ -108,3 +112,28 @@ def test_invalid_transcript_is_rejected(client: TestClient) -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_transcript_edits_and_saved_moments_persist(client: TestClient) -> None:
+    meeting = client.get("/api/v1/meetings").json()["data"]["items"][0]
+    detail = client.get(f"/api/v1/meetings/{meeting['id']}").json()["data"]
+    segment = detail["transcriptSegments"][0]
+
+    edit_response = client.patch(
+        f"/api/v1/transcript-segments/{segment['id']}",
+        json={"text": f"{segment['text']} Updated for clarity."},
+    )
+    assert edit_response.status_code == 200
+    assert edit_response.json()["data"]["text"].endswith("Updated for clarity.")
+
+    moment_response = client.post(
+        f"/api/v1/meetings/{meeting['id']}/moments",
+        json={"segmentId": segment["id"], "kind": "important", "note": "Key decision"},
+    )
+    assert moment_response.status_code == 201
+    moment = moment_response.json()["data"]
+    assert moment["authorName"] == "Anusha"
+
+    refreshed = client.get(f"/api/v1/meetings/{meeting['id']}").json()["data"]
+    assert any(item["id"] == moment["id"] for item in refreshed["moments"])
+    assert client.delete(f"/api/v1/moments/{moment['id']}").status_code == 204

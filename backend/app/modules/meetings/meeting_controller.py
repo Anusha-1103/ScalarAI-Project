@@ -10,18 +10,24 @@ from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile,
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.api_schemas import ApiResponse, PaginatedData, Pagination
+from app.common.auth import CurrentPrincipalDependency
 from app.common.database import get_database_session
 from app.common.exceptions import ApplicationError
 from app.modules.meetings.meeting_repository import MeetingRepository
 from app.modules.meetings.meeting_schemas import (
+    AccountRead,
     ActionItemCreate,
     ActionItemRead,
     ActionItemUpdate,
     MeetingCreate,
     MeetingDetail,
     MeetingListItem,
+    MeetingMomentCreate,
+    MeetingMomentRead,
     MeetingUpdate,
     SearchResult,
+    TranscriptSegmentRead,
+    TranscriptSegmentUpdate,
 )
 from app.modules.meetings.meeting_service import MeetingService
 
@@ -30,11 +36,17 @@ router = APIRouter(tags=["Meetings"])
 
 def get_meeting_service(
     session: Annotated[AsyncSession, Depends(get_database_session)],
+    principal: CurrentPrincipalDependency,
 ) -> MeetingService:
-    return MeetingService(MeetingRepository(session))
+    return MeetingService(MeetingRepository(session, principal))
 
 
 MeetingServiceDependency = Annotated[MeetingService, Depends(get_meeting_service)]
+
+
+@router.get("/me", response_model=ApiResponse[AccountRead], tags=["Account"])
+async def get_current_account(service: MeetingServiceDependency) -> ApiResponse[AccountRead]:
+    return ApiResponse(data=await service.get_account())
 
 
 @router.get("/meetings", response_model=ApiResponse[PaginatedData[MeetingListItem]])
@@ -171,6 +183,36 @@ async def update_action_item(
 @router.delete("/action-items/{action_item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_action_item(action_item_id: str, service: MeetingServiceDependency) -> Response:
     await service.delete_action_item(action_item_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.patch(
+    "/transcript-segments/{segment_id}", response_model=ApiResponse[TranscriptSegmentRead]
+)
+async def update_transcript_segment(
+    segment_id: str,
+    payload: TranscriptSegmentUpdate,
+    service: MeetingServiceDependency,
+) -> ApiResponse[TranscriptSegmentRead]:
+    return ApiResponse(data=await service.update_transcript_segment(segment_id, payload))
+
+
+@router.post(
+    "/meetings/{meeting_id}/moments",
+    response_model=ApiResponse[MeetingMomentRead],
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_meeting_moment(
+    meeting_id: str,
+    payload: MeetingMomentCreate,
+    service: MeetingServiceDependency,
+) -> ApiResponse[MeetingMomentRead]:
+    return ApiResponse(data=await service.create_moment(meeting_id, payload))
+
+
+@router.delete("/moments/{moment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_meeting_moment(moment_id: str, service: MeetingServiceDependency) -> Response:
+    await service.delete_moment(moment_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
