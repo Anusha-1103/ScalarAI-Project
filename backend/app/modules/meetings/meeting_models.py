@@ -37,7 +37,7 @@ class Account(TimestampMixin, Base):
 class Meeting(TimestampMixin, Base):
     __tablename__ = "Meeting"
     __table_args__ = (
-        CheckConstraint("durationInSeconds >= 0", name="meeting_duration_non_negative"),
+        CheckConstraint('"durationInSeconds" >= 0', name="meeting_duration_non_negative"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -118,8 +118,8 @@ class TranscriptSegment(TimestampMixin, Base):
     __tablename__ = "TranscriptSegment"
     __table_args__ = (
         UniqueConstraint("meetingId", "sequenceNumber"),
-        CheckConstraint("startInSeconds >= 0", name="segment_start_non_negative"),
-        CheckConstraint("endInSeconds >= startInSeconds", name="segment_end_after_start"),
+        CheckConstraint('"startInSeconds" >= 0', name="segment_start_non_negative"),
+        CheckConstraint('"endInSeconds" >= "startInSeconds"', name="segment_end_after_start"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -175,7 +175,7 @@ class SummaryKeyPoint(Base):
 
 class Chapter(Base):
     __tablename__ = "Chapter"
-    __table_args__ = (CheckConstraint("startInSeconds >= 0", name="chapter_start_non_negative"),)
+    __table_args__ = (CheckConstraint('"startInSeconds" >= 0', name="chapter_start_non_negative"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     meeting_id: Mapped[str] = mapped_column(

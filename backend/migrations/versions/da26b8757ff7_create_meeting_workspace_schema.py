@@ -57,7 +57,8 @@ def upgrade() -> None:
         sa.Column("createdAtUtc", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updatedAtUtc", sa.DateTime(timezone=True), nullable=False),
         sa.CheckConstraint(
-            "durationInSeconds >= 0", name=op.f("ck_Meeting_meeting_duration_non_negative")
+            '"durationInSeconds" >= 0',
+            name=op.f("ck_Meeting_meeting_duration_non_negative"),
         ),
         sa.ForeignKeyConstraint(
             ["ownerAccountId"], ["Account.id"], name=op.f("fk_Meeting_ownerAccountId_Account")
@@ -106,7 +107,8 @@ def upgrade() -> None:
         sa.Column("title", sa.String(length=160), nullable=False),
         sa.Column("startInSeconds", sa.Float(), nullable=False),
         sa.CheckConstraint(
-            "startInSeconds >= 0", name=op.f("ck_Chapter_chapter_start_non_negative")
+            '"startInSeconds" >= 0',
+            name=op.f("ck_Chapter_chapter_start_non_negative"),
         ),
         sa.ForeignKeyConstraint(
             ["meetingId"],
@@ -178,11 +180,12 @@ def upgrade() -> None:
         sa.Column("createdAtUtc", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updatedAtUtc", sa.DateTime(timezone=True), nullable=False),
         sa.CheckConstraint(
-            "endInSeconds >= startInSeconds",
+            '"endInSeconds" >= "startInSeconds"',
             name=op.f("ck_TranscriptSegment_segment_end_after_start"),
         ),
         sa.CheckConstraint(
-            "startInSeconds >= 0", name=op.f("ck_TranscriptSegment_segment_start_non_negative")
+            '"startInSeconds" >= 0',
+            name=op.f("ck_TranscriptSegment_segment_start_non_negative"),
         ),
         sa.ForeignKeyConstraint(
             ["meetingId"],
