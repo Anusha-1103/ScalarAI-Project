@@ -89,6 +89,12 @@ export interface SearchResult {
   resultType: string;
 }
 
+export interface AskAnswer {
+  answer: string;
+  sources: SearchResult[];
+  usedAi: boolean;
+}
+
 export interface AccountProfile {
   id: string;
   displayName: string;

@@ -2,6 +2,7 @@ import {
   AccountProfile,
   ActionItem,
   ActionItemInput,
+  AskAnswer,
   ApiResponse,
   MeetingDetail,
   MeetingMoment,
@@ -76,6 +77,10 @@ export function deleteActionItem(id: string): Promise<void> {
 
 export function globalSearch(query: string): Promise<SearchResult[]> {
   return apiRequest(`/search?q=${encodeURIComponent(query)}`);
+}
+
+export function askMeetingMemory(question: string): Promise<AskAnswer> {
+  return apiRequest("/ask", { method: "POST", body: JSON.stringify({ question }) });
 }
 
 export function updateTranscriptSegment(id: string, text: string): Promise<TranscriptSegment> {

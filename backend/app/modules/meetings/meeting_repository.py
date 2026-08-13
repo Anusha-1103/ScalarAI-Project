@@ -1,10 +1,12 @@
 from datetime import datetime
 
 from sqlalchemy import Select, case, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.common.auth import CurrentPrincipal
+from app.common.settings_config import get_settings
 from app.modules.meetings.meeting_models import (
     Account,
     ActionItem,
@@ -28,6 +30,7 @@ class MeetingRepository:
             if account:
                 return account
         account = None
+        created = False
         if self.principal and self.principal.auth_user_id:
             account = await self.session.scalar(
                 select(Account).where(Account.auth_user_id == self.principal.auth_user_id)
@@ -39,8 +42,16 @@ class MeetingRepository:
                     email=self.principal.email,
                 )
                 self.session.add(account)
-                await self.session.flush()
-                await self.session.commit()
+                try:
+                    await self.session.commit()
+                    created = True
+                except IntegrityError:
+                    await self.session.rollback()
+                    account = await self.session.scalar(
+                        select(Account).where(Account.auth_user_id == self.principal.auth_user_id)
+                    )
+            if not account:
+                raise RuntimeError("Authenticated account could not be resolved")
         if not account:
             account = await self.session.scalar(
                 select(Account).order_by(Account.created_at_utc).limit(1)
@@ -48,6 +59,10 @@ class MeetingRepository:
         if not account:
             raise RuntimeError("No application account is configured")
         self.account_id = account.id
+        if created and get_settings().seed_new_accounts:
+            from app.seed_data import provision_account_workspace
+
+            await provision_account_workspace(self.session, account)
         return account
 
     async def _owner_id(self) -> str:

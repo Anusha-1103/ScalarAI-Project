@@ -141,3 +141,13 @@ class SearchResult(ApiModel):
     start_in_seconds: float | None = None
     snippet: str
     result_type: str
+
+
+class AskRequest(ApiModel):
+    question: str = Field(min_length=2, max_length=500)
+
+
+class AskAnswer(ApiModel):
+    answer: str
+    sources: list[SearchResult]
+    used_ai: bool

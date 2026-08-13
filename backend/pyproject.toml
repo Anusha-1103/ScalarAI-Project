@@ -8,6 +8,7 @@ dependencies = [
   "aiosqlite>=0.21.0",
   "alembic>=1.16.0",
   "fastapi>=0.116.0",
+  "httpx>=0.28.0",
   "pydantic-settings>=2.10.0",
   "pyjwt[crypto]>=2.10.1",
   "python-multipart>=0.0.20",
@@ -26,7 +27,6 @@ exclude = ["migrations*", "tests*"]
 
 [dependency-groups]
 dev = [
-  "httpx>=0.28.0",
   "pytest>=8.4.0",
   "pytest-asyncio>=1.1.0",
   "ruff>=0.12.0",

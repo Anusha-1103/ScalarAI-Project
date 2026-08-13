@@ -19,6 +19,8 @@ from app.modules.meetings.meeting_schemas import (
     ActionItemCreate,
     ActionItemRead,
     ActionItemUpdate,
+    AskAnswer,
+    AskRequest,
     MeetingCreate,
     MeetingDetail,
     MeetingListItem,
@@ -223,3 +225,10 @@ async def global_search(
     limit: int = Query(default=20, ge=1, le=50),
 ) -> ApiResponse[list[SearchResult]]:
     return ApiResponse(data=await service.search(query_text, limit))
+
+
+@router.post("/ask", response_model=ApiResponse[AskAnswer], tags=["Search"])
+async def ask_meeting_memory(
+    payload: AskRequest, service: MeetingServiceDependency
+) -> ApiResponse[AskAnswer]:
+    return ApiResponse(data=await service.ask(payload.question))

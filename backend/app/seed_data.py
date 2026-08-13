@@ -133,6 +133,41 @@ Ava Thompson: Great. Final copy review is Wednesday afternoon and launch remains
 ]
 
 
+async def provision_account_workspace(session, account: Account) -> None:
+    existing_titles = set(
+        await session.scalars(select(Meeting.title).where(Meeting.owner_account_id == account.id))
+    )
+    repository = MeetingRepository(session)
+    repository.account_id = account.id
+    service = MeetingService(repository)
+    for seed in SEED_MEETINGS:
+        if seed["title"] in existing_titles:
+            continue
+        detail = await service.create_meeting(
+            MeetingCreate(
+                title=seed["title"],
+                meeting_at_utc=seed["meeting_at_utc"],
+                participant_names=seed["participants"],
+                transcript=seed["transcript"],
+            ),
+            analyze_with_ai=False,
+            generate_actions=False,
+            source_type="demo",
+        )
+        participant_ids = {participant.name: participant.id for participant in detail.participants}
+        existing_actions = {item.description for item in detail.action_items}
+        for description, assignee_name in seed["actions"]:
+            if description in existing_actions:
+                continue
+            await service.create_action_item(
+                detail.id,
+                ActionItemCreate(
+                    description=description,
+                    assignee_participant_id=participant_ids[assignee_name],
+                ),
+            )
+
+
 async def seed_database() -> None:
     async with async_session_factory() as session:
         if (await session.scalar(select(func.count(Meeting.id)))) or 0:
@@ -145,25 +180,4 @@ async def seed_database() -> None:
         )
         session.add(account)
         await session.commit()
-
-        service = MeetingService(MeetingRepository(session))
-        for seed in SEED_MEETINGS:
-            detail = await service.create_meeting(
-                MeetingCreate(
-                    title=seed["title"],
-                    meeting_at_utc=seed["meeting_at_utc"],
-                    participant_names=seed["participants"],
-                    transcript=seed["transcript"],
-                )
-            )
-            participant_ids = {
-                participant.name: participant.id for participant in detail.participants
-            }
-            for description, assignee_name in seed["actions"]:
-                await service.create_action_item(
-                    detail.id,
-                    ActionItemCreate(
-                        description=description,
-                        assignee_participant_id=participant_ids[assignee_name],
-                    ),
-                )
+        await provision_account_workspace(session, account)

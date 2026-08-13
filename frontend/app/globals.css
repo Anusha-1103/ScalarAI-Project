@@ -74,6 +74,7 @@ h1, h2, p { margin-top: 0; }h1 { margin-bottom: 7px; font-size: 27px; line-heigh
 .avatar-stack { display: flex; padding-left: 6px; }.avatar { width: 30px; height: 30px; flex: 0 0 auto; border-radius: 50%; color: white; display: grid; place-items: center; font-size: 10px; font-weight: 750; border: 2px solid white; }.avatar-sm { width: 27px; height: 27px; margin-left: -6px; }.avatar-more { background: #e4e8ef; color: #566174; }
 .meeting-skeleton { height: 103px; background: linear-gradient(90deg, transparent, #f4f6f9, transparent); background-size: 200% 100%; animation: shimmer 1.5s infinite; }.meeting-skeleton:hover { background-color: transparent; }
 @keyframes shimmer { to { background-position: -200% 0; } }
+.workspace-boot { min-height: 100vh; display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--ink); background: var(--surface-soft); }.workspace-boot .brand-mark { width: 36px; height: 36px; }.workspace-boot .button { margin-left: 8px; }
 .state-panel { min-height: 330px; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; color: var(--muted); }.state-panel h2 { color: var(--ink); margin: 16px 0 7px; }.state-panel p { margin-bottom: 17px; }
 
 .modal { width: min(640px, calc(100vw - 28px)); max-height: calc(100vh - 40px); border: 0; border-radius: 8px; padding: 0; box-shadow: var(--shadow); color: var(--ink); }.modal::backdrop { background: rgba(19, 25, 36, .48); }

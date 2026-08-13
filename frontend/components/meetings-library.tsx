@@ -28,6 +28,7 @@ export function MeetingsLibrary() {
     return value;
   }, [dateFrom, dateTo, deferredSearch, participant, sortOrder]);
   const meetings = useQuery({ queryKey: ["meetings", params.toString()], queryFn: () => getMeetings(params) });
+  const hasActiveFilters = Boolean(search.trim() || participant.trim() || dateFrom || dateTo);
 
   return (
     <section className="page meetings-page">
@@ -53,7 +54,9 @@ export function MeetingsLibrary() {
           <div className="state-panel"><RefreshCw size={24} /><h2>Couldn&apos;t load meetings</h2><p>Check that the API is running, then try again.</p><button className="button button-secondary" onClick={() => meetings.refetch()}>Try again</button></div>
         )}
         {meetings.data?.items.length === 0 && (
-          <div className="state-panel"><Search size={24} /><h2>No meetings found</h2><p>Adjust your search or participant filter.</p><button className="button button-secondary" onClick={() => { setSearch(""); setParticipant(""); }}>Clear filters</button></div>
+          hasActiveFilters
+            ? <div className="state-panel"><Search size={24} /><h2>No matching meetings</h2><p>Try a different title, person, or date range.</p><button className="button button-secondary" onClick={() => { setSearch(""); setParticipant(""); setDateFrom(""); setDateTo(""); }}>Clear filters</button></div>
+            : <div className="state-panel"><CalendarDays size={24} /><h2>Your first meeting starts here</h2><p>Add a transcript to generate notes, chapters, and follow-ups.</p><button className="button button-primary" onClick={() => setImportOpen(true)}><Plus size={16} />Add meeting</button></div>
         )}
         {meetings.data?.items.map((meeting) => (
           <Link href={`/meetings/${meeting.id}`} className="meeting-row" key={meeting.id}>

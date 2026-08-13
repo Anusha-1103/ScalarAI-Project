@@ -7,7 +7,7 @@ persistent action items.
 
 ## Highlights
 
-- Six seeded meetings with speakers, timestamps, summaries, chapters, and tasks
+- Account-scoped sample workspaces with speakers, timestamps, summaries, chapters, and tasks
 - Meeting search, participant and date filters, and recency sorting
 - TXT, VTT, and JSON transcript import, plus pasted-transcript creation
 - Playback seek bar synchronized in both directions with transcript segments
@@ -18,12 +18,13 @@ persistent action items.
 - Meeting metadata and action-item CRUD with toast feedback
 - Responsive desktop and mobile workspaces and Markdown export
 - Dashboard, Ask Echo, calendar, people, integrations, and settings workspaces
+- Groq-powered summaries, chapters, action extraction, and grounded answers
+- Resilient local analysis fallback when the AI provider is unavailable
 - Interactive OpenAPI documentation at `/docs`
 
-Real speech-to-text, live call bots, authentication, integrations, and actual
-LLM inference are intentionally out of scope. The API generates deterministic
-summary content from imported text so the project is immediately usable without
-external services or credentials.
+Groq inference is optional and runs only from the backend. When no key is
+configured, or the provider is temporarily unavailable, the API falls back to
+deterministic local analysis so imports and transcript search remain usable.
 
 ## Tech Stack
 
@@ -114,6 +115,7 @@ All JSON responses use `{ success, data, error }`.
 | `POST` | `/api/v1/meetings/{id}/moments` | Save a transcript moment |
 | `DELETE` | `/api/v1/moments/{id}` | Remove a saved moment |
 | `GET` | `/api/v1/search?q=...` | Search all transcript segments |
+| `POST` | `/api/v1/ask` | Answer a question from tenant-scoped transcript evidence |
 | `GET` | `/api/v1/me` | Resolve the authenticated application profile |
 | `GET` | `/api/v1/health` | Deployment health check |
 
@@ -140,7 +142,7 @@ The frontend is ready for Vercel with `frontend` as the project root. Set
 
 The included `render.yaml` provisions FastAPI on Render. Supply the Supabase
 session-pooler URL through `ECHONOTE_DATABASE_URL`, set
-`ECHONOTE_SUPABASE_URL`, and allow the Vercel origin through
+`ECHONOTE_SUPABASE_URL`, add `ECHONOTE_GROQ_API_KEY`, and allow the Vercel origin through
 `ECHONOTE_CORS_ORIGINS`. Dockerfiles are included for container deployment.
 
 The service exposes `/api/v1/health` for deployment readiness and automatic
@@ -150,8 +152,8 @@ instead of synthetic keep-alive requests.
 
 ## Assumptions
 
-- A default seeded account represents the logged-in user.
+- Every newly authenticated account receives an isolated sample workspace.
 - Imported transcripts are UTF-8 and at most 1 MB.
 - Playback uses a deterministic recording clock because real media and
   transcription are outside the assignment scope.
-- Summary generation is deterministic and local; no transcript leaves the API.
+- Transcript content is sent to Groq only when `ECHONOTE_GROQ_API_KEY` is configured.

@@ -61,6 +61,9 @@ def test_meeting_and_action_item_crud(client: TestClient) -> None:
     meeting = create_response.json()["data"]
     assert meeting["title"] == "API Contract Review"
     assert len(meeting["transcriptSegments"]) == 3
+    assert any(
+        "review error envelopes" in item["description"].lower() for item in meeting["actionItems"]
+    )
 
     update_response = client.patch(
         f"/api/v1/meetings/{meeting['id']}", json={"title": "API and Client Contract Review"}
@@ -107,6 +110,17 @@ def test_global_search_understands_natural_language_questions(client: TestClient
     results = response.json()["data"]
     assert results
     assert any("onboarding" in result["snippet"].lower() for result in results)
+
+
+def test_ask_echo_returns_grounded_answer_and_sources(client: TestClient) -> None:
+    response = client.post("/api/v1/ask", json={"question": "What did we decide about onboarding?"})
+
+    assert response.status_code == 200
+    answer = response.json()["data"]
+    assert answer["answer"]
+    assert answer["sources"]
+    assert answer["usedAi"] is False
+    assert any("onboarding" in source["snippet"].lower() for source in answer["sources"])
 
 
 def test_invalid_transcript_is_rejected(client: TestClient) -> None:

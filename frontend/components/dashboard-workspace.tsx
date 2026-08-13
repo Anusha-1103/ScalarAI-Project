@@ -5,10 +5,11 @@ import { ArrowRight, CheckCircle2, Clock3, ListChecks, RefreshCw, Users } from "
 import Link from "next/link";
 
 import { AvatarStack } from "@/components/avatar-stack";
-import { getMeeting, getMeetings } from "@/lib/api";
+import { getMeeting, getMeetings, getProfile } from "@/lib/api";
 import { formatDuration, formatMeetingDate } from "@/lib/format";
 
 export function DashboardWorkspace() {
+  const profile = useQuery({ queryKey: ["profile"], queryFn: getProfile });
   const dashboard = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
@@ -25,9 +26,12 @@ export function DashboardWorkspace() {
   const openActions = actions.filter((item) => !item.isCompleted);
   const people = new Set(library.items.flatMap((meeting) => meeting.participants.map((person) => person.name)));
   const maxDuration = Math.max(...library.items.map((meeting) => meeting.durationInSeconds), 1);
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const accountName = profile.data?.displayName?.trim() || "there";
   return (
     <section className="page dashboard-page">
-      <div className="page-heading"><div><p className="eyebrow">Workspace pulse</p><h1>Good morning, Anusha</h1><p className="page-subtitle">Here is what your conversations are moving forward.</p></div><Link className="button button-primary" href="/meetings">Open notebook<ArrowRight size={16} /></Link></div>
+      <div className="page-heading"><div><p className="eyebrow">Workspace pulse</p><h1>{greeting}, {accountName}</h1><p className="page-subtitle">Here is what your conversations are moving forward.</p></div><Link className="button button-primary" href="/meetings">Open notebook<ArrowRight size={16} /></Link></div>
       <div className="metric-strip"><div><span className="metric-icon metric-purple"><Clock3 size={18} /></span><span><strong>{formatDuration(totalSeconds)}</strong><small>Conversation time</small></span></div><div><span className="metric-icon metric-green"><ListChecks size={18} /></span><span><strong>{openActions.length}</strong><small>Open action items</small></span></div><div><span className="metric-icon metric-gold"><Users size={18} /></span><span><strong>{people.size}</strong><small>People in meetings</small></span></div><div><span className="metric-icon metric-blue"><CheckCircle2 size={18} /></span><span><strong>{actions.length ? Math.round(((actions.length - openActions.length) / actions.length) * 100) : 0}%</strong><small>Task completion</small></span></div></div>
       <div className="dashboard-grid">
         <section className="dashboard-section"><header><div><p className="eyebrow">Recent activity</p><h2>Meeting volume</h2></div><span>Last {library.items.length} meetings</span></header><div className="meeting-chart">{library.items.slice().reverse().map((meeting) => <div key={meeting.id}><span style={{ height: `${Math.max((meeting.durationInSeconds / maxDuration) * 100, 16)}%` }} title={`${meeting.title}: ${formatDuration(meeting.durationInSeconds)}`} /><small>{new Date(meeting.meetingAtUtc).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</small></div>)}</div></section>

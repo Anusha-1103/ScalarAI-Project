@@ -3,6 +3,7 @@ import re
 from datetime import UTC, datetime
 
 from app.common.exceptions import ApplicationError
+from app.modules.meetings.ai_service import MeetingAIService
 from app.modules.meetings.meeting_models import (
     ActionItem,
     Chapter,
@@ -20,6 +21,7 @@ from app.modules.meetings.meeting_schemas import (
     ActionItemCreate,
     ActionItemRead,
     ActionItemUpdate,
+    AskAnswer,
     ChapterRead,
     MeetingCreate,
     MeetingDetail,
@@ -33,12 +35,13 @@ from app.modules.meetings.meeting_schemas import (
     TranscriptSegmentRead,
     TranscriptSegmentUpdate,
 )
-from app.modules.meetings.transcript_helper import build_summary, parse_transcript
+from app.modules.meetings.transcript_helper import parse_transcript
 
 
 class MeetingService:
     def __init__(self, repository: MeetingRepository) -> None:
         self.repository = repository
+        self.ai = MeetingAIService()
 
     async def get_account(self) -> AccountRead:
         account = await self.repository.resolve_account()
@@ -170,7 +173,13 @@ class MeetingService:
         return participant
 
     async def create_meeting(
-        self, payload: MeetingCreate, *, file_type: str = "txt"
+        self,
+        payload: MeetingCreate,
+        *,
+        file_type: str = "txt",
+        analyze_with_ai: bool = True,
+        generate_actions: bool = True,
+        source_type: str = "uploaded",
     ) -> MeetingDetail:
         account = await self.repository.get_default_account()
         if not account:
@@ -196,11 +205,11 @@ class MeetingService:
             title=payload.title.strip(),
             meeting_at_utc=payload.meeting_at_utc,
             duration_in_seconds=duration,
-            source_type="uploaded",
+            source_type=source_type,
         )
         meeting.participants = [
             MeetingParticipant(participant=participants[name], is_host=index == 0)
-            for index, name in enumerate(payload.participant_names)
+            for index, name in enumerate(speaker_names)
         ]
         meeting.transcript_segments = [
             TranscriptSegment(
@@ -212,26 +221,34 @@ class MeetingService:
             )
             for index, item in enumerate(parsed)
         ]
-        overview, points = build_summary(parsed)
+        analysis = await self.ai.analyze(parsed, use_ai=analyze_with_ai)
         meeting.summary = MeetingSummary(
-            overview=overview,
+            overview=analysis.overview,
             key_points=[
                 SummaryKeyPoint(sequence_number=index, text=text)
-                for index, text in enumerate(points)
+                for index, text in enumerate(analysis.key_points)
             ],
         )
-        chapter_indexes = sorted({0, len(parsed) // 3, (len(parsed) * 2) // 3})
         meeting.chapters = [
             Chapter(
-                title=(
-                    "Opening and context"
-                    if index == 0
-                    else f"Discussion: {parsed[index].text[:52].rstrip('.')}"
-                ),
-                start_in_seconds=parsed[index].start_in_seconds,
+                title=chapter.title,
+                start_in_seconds=min(chapter.start_in_seconds, duration),
             )
-            for index in chapter_indexes
+            for chapter in analysis.chapters
         ]
+        participant_lookup = {
+            name.casefold(): participant for name, participant in participants.items()
+        }
+        if generate_actions:
+            meeting.action_items = [
+                ActionItem(
+                    description=item.description,
+                    assignee=participant_lookup.get(item.assignee_name.casefold())
+                    if item.assignee_name
+                    else None,
+                )
+                for item in analysis.action_items
+            ]
         self.repository.add(meeting)
         await self.repository.commit()
         created = await self.repository.get_meeting(meeting.id)
@@ -409,3 +426,8 @@ class MeetingService:
             )
             for meeting, segment in matches
         ]
+
+    async def ask(self, question: str) -> AskAnswer:
+        sources = await self.search(question, 8)
+        result = await self.ai.answer(question, [source.snippet for source in sources])
+        return AskAnswer(answer=result.answer, sources=sources[:5], used_ai=result.used_ai)

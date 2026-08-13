@@ -62,7 +62,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (pathname.startsWith("/auth")) return children;
 
-  const displayName = profile.data?.displayName ?? "Anusha";
+  if (profile.isLoading) {
+    return <div className="workspace-boot" role="status"><span className="brand-mark"><Bot size={20} /></span><strong>Opening your workspace</strong></div>;
+  }
+
+  if (profile.isError) {
+    return <div className="workspace-boot"><span className="brand-mark"><Bot size={20} /></span><strong>We couldn&apos;t open your workspace</strong><button className="button button-secondary" onClick={() => profile.refetch()}>Try again</button></div>;
+  }
+
+  const displayName = profile.data?.displayName?.trim() || "Your account";
   const initial = displayName.slice(0, 1).toUpperCase();
 
   async function signOut() {
