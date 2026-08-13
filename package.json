@@ -1,0 +1,11 @@
+{
+  "name": "echonote",
+  "private": true,
+  "packageManager": "pnpm@10.15.1",
+  "scripts": {
+    "dev": "pnpm --dir frontend dev",
+    "build": "pnpm --dir frontend build",
+    "lint": "pnpm --dir frontend lint",
+    "test": "pnpm --dir frontend test"
+  }
+}
