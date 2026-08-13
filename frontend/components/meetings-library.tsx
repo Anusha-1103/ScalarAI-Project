@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDownUp, CalendarDays, ChevronRight, Filter, Plus, RefreshCw, Search, Users } from "lucide-react";
+import { ArrowDownUp, CalendarDays, ChevronRight, FileAudio2, Filter, Plus, RefreshCw, Search, Users } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useMemo, useState } from "react";
 
@@ -49,6 +49,7 @@ export function MeetingsLibrary() {
       <div className="library-summary"><span>{meetings.data?.pagination.totalItems ?? 0} meetings</span><span><CalendarDays size={15} />{dateFrom || dateTo ? "Custom date range" : "All time"}</span></div>
 
       <div className="meeting-list" aria-live="polite">
+        {!!meetings.data?.items.length && <div className="meeting-list-header" aria-hidden="true"><span>Meeting</span><span>Participants</span><span>Date and duration</span><span>Follow-through</span></div>}
         {meetings.isLoading && Array.from({ length: 5 }, (_, index) => <div className="meeting-row meeting-skeleton" key={index} />)}
         {meetings.isError && (
           <div className="state-panel"><RefreshCw size={24} /><h2>Couldn&apos;t load meetings</h2><p>Check that the API is running, then try again.</p><button className="button button-secondary" onClick={() => meetings.refetch()}>Try again</button></div>
@@ -60,11 +61,11 @@ export function MeetingsLibrary() {
         )}
         {meetings.data?.items.map((meeting) => (
           <Link href={`/meetings/${meeting.id}`} className="meeting-row" key={meeting.id}>
-            <div className="meeting-icon"><span /></div>
+            <div className="meeting-icon"><FileAudio2 size={18} /></div>
             <div className="meeting-main"><h2>{meeting.title}</h2><p>{meeting.summaryPreview ?? "Transcript ready to review"}</p></div>
             <div className="meeting-people"><AvatarStack participants={meeting.participants} /><span>{meeting.participants.length} people</span></div>
             <div className="meeting-date"><strong>{formatMeetingDate(meeting.meetingAtUtc)}</strong><span>{formatDuration(meeting.durationInSeconds)}</span></div>
-            <div className="meeting-actions"><span>{meeting.completedActionItemCount}/{meeting.actionItemCount} tasks</span><ChevronRight size={18} /></div>
+            <div className="meeting-actions"><span className="task-progress"><i style={{ width: `${meeting.actionItemCount ? (meeting.completedActionItemCount / meeting.actionItemCount) * 100 : 0}%` }} /></span><span>{meeting.completedActionItemCount}/{meeting.actionItemCount} tasks</span><ChevronRight size={18} /></div>
           </Link>
         ))}
       </div>

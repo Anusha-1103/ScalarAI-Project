@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, CheckCircle2, LockKeyhole, Mail } from "lucide-react";
+import { AudioLines, CheckCircle2, LockKeyhole, Mail } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { toast } from "sonner";
@@ -56,7 +56,7 @@ export function SignInForm() {
   return (
     <main className="auth-page">
       <section className="auth-context">
-        <div className="auth-brand"><span className="brand-mark"><Bot size={19} /></span>EchoNote</div>
+        <div className="auth-brand"><span className="brand-mark"><AudioLines size={19} /></span>EchoNote</div>
         <div className="auth-message"><p className="eyebrow">Your meeting memory</p><h1>Turn every conversation into work that moves forward.</h1><p>Searchable transcripts, reliable follow-ups, and a complete record of every decision.</p><ul><li><CheckCircle2 size={17} />Private workspace for every account</li><li><CheckCircle2 size={17} />Meeting notes ready in one place</li><li><CheckCircle2 size={17} />Tasks stay connected to context</li></ul></div>
         <small>Secure authentication and data isolation powered by Supabase.</small>
       </section>
