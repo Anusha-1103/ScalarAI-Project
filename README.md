@@ -143,6 +143,11 @@ session-pooler URL through `ECHONOTE_DATABASE_URL`, set
 `ECHONOTE_SUPABASE_URL`, and allow the Vercel origin through
 `ECHONOTE_CORS_ORIGINS`. Dockerfiles are included for container deployment.
 
+The service exposes `/api/v1/health` for deployment readiness and automatic
+recovery checks. Render free instances may sleep while idle and wake on the next
+request; latency-sensitive production traffic should use an always-on instance
+instead of synthetic keep-alive requests.
+
 ## Assumptions
 
 - A default seeded account represents the logged-in user.
