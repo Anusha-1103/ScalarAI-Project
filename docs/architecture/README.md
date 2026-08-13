@@ -10,7 +10,8 @@ Browser
             -> FastAPI /api/v1
                  -> application services
                       -> repositories
-                           -> SQLite
+                           -> Supabase PostgreSQL (production)
+                           -> SQLite (local demo/tests)
 ```
 
 ## Frontend
@@ -31,12 +32,21 @@ Initial modules are meetings, transcripts, summaries, action items, and search.
 They share database and error infrastructure but do not reach into each other's
 persistence implementation.
 
+## Identity and Tenancy
+
+Supabase Auth owns credentials and sessions. Next.js refreshes cookie sessions,
+then passes the access token to FastAPI. The API verifies the Supabase signature
+and maps the JWT subject to an application account. Repositories resolve that
+account once per request and scope every meeting, transcript, search, and task
+query by its owner. PostgreSQL RLS mirrors the ownership rule for Data API reads.
+
 ## Persistence
 
-SQLite stores meetings, participants, transcript segments, summaries, chapters,
-and action items. Alembic owns schema changes. Foreign keys and frequently used
-filter fields are indexed. Transcript sequence and timestamps are constrained so
-playback order remains deterministic.
+Supabase PostgreSQL stores accounts, meetings, participants, transcript segments,
+summaries, chapters, action items, and saved moments. SQLite supplies the same
+schema for local demos and tests. Alembic owns schema changes. Foreign keys and
+frequently used filter fields are indexed. Transcript sequence and timestamps
+are constrained so playback order remains deterministic.
 
 ## Search
 

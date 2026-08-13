@@ -13,10 +13,10 @@ services:
       - key: ECHONOTE_ENVIRONMENT
         value: production
       - key: ECHONOTE_DATABASE_URL
-        value: sqlite+aiosqlite:////var/data/echonote.db
+        sync: false
       - key: ECHONOTE_CORS_ORIGINS
         sync: false
-    disk:
-      name: echonote-data
-      mountPath: /var/data
-      sizeGB: 1
+      - key: ECHONOTE_AUTH_REQUIRED
+        value: true
+      - key: ECHONOTE_SUPABASE_URL
+        sync: false

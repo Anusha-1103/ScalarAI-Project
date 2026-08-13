@@ -12,8 +12,12 @@ persistent action items.
 - TXT, VTT, and JSON transcript import, plus pasted-transcript creation
 - Playback seek bar synchronized in both directions with transcript segments
 - In-transcript highlighting and global search with timestamp deep links
+- Supabase email/password and magic-link authentication with isolated accounts
+- Editable transcript lines, saved moments, and Smart Search filters
+- Speaker talk time, recurring topics, meeting tone, and conversation metrics
 - Meeting metadata and action-item CRUD with toast feedback
 - Responsive desktop and mobile workspaces and Markdown export
+- Dashboard, Ask Echo, calendar, people, integrations, and settings workspaces
 - Interactive OpenAPI documentation at `/docs`
 
 Real speech-to-text, live call bots, authentication, integrations, and actual
@@ -26,8 +30,8 @@ external services or credentials.
 - **Frontend:** Next.js 15, React 19, TypeScript, TanStack Query, Tailwind CSS,
   Lucide icons, Vitest
 - **Backend:** Python 3.12+, FastAPI, SQLAlchemy async, Pydantic, Alembic, Pytest
-- **Database:** SQLite with foreign keys, constraints, indexes, and soft-deleted
-  meetings
+- **Platform:** Supabase Auth and PostgreSQL with row-level security
+- **Local adapter:** SQLite with the same domain models and API behavior
 
 ## Local Setup
 
@@ -71,14 +75,16 @@ The frontend owns interaction state and derives the active transcript segment
 from one playback timestamp. TanStack Query owns remote state and invalidation.
 The backend is a modular monolith: controllers validate HTTP contracts,
 services implement use cases and transactions, and repositories exclusively own
-database queries. See [the architecture notes](docs/architecture/README.md) and
+database queries. Supabase Auth supplies production identities, and PostgreSQL
+RLS provides a second ownership boundary behind the API. See
+[the Supabase setup guide](docs/SUPABASE.md), [the architecture notes](docs/architecture/README.md), and
 [decisions](docs/decisions/) for the reasoning behind these boundaries.
 
 ## Database Schema
 
 | Table | Purpose | Important relationships |
 | --- | --- | --- |
-| `Account` | Default authenticated workspace owner | Owns meetings |
+| `Account` | Supabase identity profile or local demo owner | Owns meetings |
 | `Meeting` | Metadata, duration, source, and soft-delete state | Parent for all meeting content |
 | `Participant` | Reusable speaker identity | Many-to-many with meetings |
 | `MeetingParticipant` | Meeting attendance and host role | Joins meetings and participants |
@@ -87,6 +93,7 @@ database queries. See [the architecture notes](docs/architecture/README.md) and
 | `SummaryKeyPoint` | Ordered summary bullets | Belongs to a summary |
 | `Chapter` | Timestamped meeting outline | Belongs to a meeting |
 | `ActionItem` | Persistent tasks, completion, assignee, due date | Meeting and optional participant |
+| `MeetingMoment` | Saved transcript bookmarks and reactions | Meeting, segment, and author account |
 
 Foreign keys cascade owned content, sequence uniqueness preserves deterministic
 ordering, timestamp checks reject invalid transcript ranges, and indexes support
@@ -103,7 +110,11 @@ All JSON responses use `{ success, data, error }`.
 | `GET/PATCH/DELETE` | `/api/v1/meetings/{id}` | Read, edit, or soft-delete a meeting |
 | `POST` | `/api/v1/meetings/{id}/action-items` | Add an action item |
 | `PATCH/DELETE` | `/api/v1/action-items/{id}` | Edit, complete, or remove a task |
+| `PATCH` | `/api/v1/transcript-segments/{id}` | Correct transcript text |
+| `POST` | `/api/v1/meetings/{id}/moments` | Save a transcript moment |
+| `DELETE` | `/api/v1/moments/{id}` | Remove a saved moment |
 | `GET` | `/api/v1/search?q=...` | Search all transcript segments |
+| `GET` | `/api/v1/me` | Resolve the authenticated application profile |
 | `GET` | `/api/v1/health` | Deployment health check |
 
 ## Verification
@@ -127,10 +138,10 @@ uv run pytest
 The frontend is ready for Vercel with `frontend` as the project root. Set
 `NEXT_PUBLIC_API_URL` to the deployed API URL ending in `/api/v1`.
 
-The included `render.yaml` provisions the FastAPI service and a persistent
-SQLite disk on Render. Set `ECHONOTE_CORS_ORIGINS` to the frontend origin. The
-API uses `ECHONOTE_DATABASE_URL` for its disk-backed database. Dockerfiles are
-also included for container-based deployment.
+The included `render.yaml` provisions FastAPI on Render. Supply the Supabase
+session-pooler URL through `ECHONOTE_DATABASE_URL`, set
+`ECHONOTE_SUPABASE_URL`, and allow the Vercel origin through
+`ECHONOTE_CORS_ORIGINS`. Dockerfiles are included for container deployment.
 
 ## Assumptions
 
