@@ -1,0 +1,47 @@
+name: Assessment uptime window
+
+on:
+  schedule:
+    - cron: "3,13,23,33,43,53 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: assessment-uptime
+  cancel-in-progress: true
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: End the temporary uptime window
+        id: window
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cutoff=1786744458
+          if [ "$(date -u +%s)" -ge "$cutoff" ]; then
+            echo "active=false" >> "$GITHUB_OUTPUT"
+            curl --fail-with-body --silent --show-error \
+              --request PUT \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "X-GitHub-Api-Version: 2026-03-10" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/assessment-uptime.yml/disable"
+          else
+            echo "active=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify the production API
+        if: steps.window.outputs.active == 'true'
+        run: |
+          curl --fail --silent --show-error \
+            --retry 3 \
+            --retry-delay 10 \
+            --max-time 90 \
+            --output /dev/null \
+            https://scalarai-echonote-api.onrender.com/api/v1/health
