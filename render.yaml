@@ -27,3 +27,5 @@ services:
         value: llama-3.3-70b-versatile
       - key: ECHONOTE_SEED_NEW_ACCOUNTS
         value: true
+      - key: ECHONOTE_DEMO_ACCOUNT_EMAIL
+        value: demo@echonote.app

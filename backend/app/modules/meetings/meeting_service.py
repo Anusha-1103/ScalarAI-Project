@@ -3,6 +3,7 @@ import re
 from datetime import UTC, datetime
 
 from app.common.exceptions import ApplicationError
+from app.common.settings_config import get_settings
 from app.modules.meetings.ai_service import MeetingAIService
 from app.modules.meetings.meeting_models import (
     ActionItem,
@@ -45,12 +46,16 @@ class MeetingService:
 
     async def get_account(self) -> AccountRead:
         account = await self.repository.resolve_account()
+        settings = get_settings()
         return AccountRead(
             id=account.id,
             display_name=account.display_name,
             email=account.email,
             avatar_url=account.avatar_url,
-            is_demo=account.auth_user_id is None,
+            is_demo=(
+                account.auth_user_id is None
+                or account.email.casefold() == settings.demo_account_email.casefold()
+            ),
         )
 
     @staticmethod
