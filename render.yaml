@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: echonote-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install .
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    plan: starter
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: ECHONOTE_ENVIRONMENT
+        value: production
+      - key: ECHONOTE_DATABASE_URL
+        value: sqlite+aiosqlite:////var/data/echonote.db
+      - key: ECHONOTE_CORS_ORIGINS
+        sync: false
+    disk:
+      name: echonote-data
+      mountPath: /var/data
+      sizeGB: 1

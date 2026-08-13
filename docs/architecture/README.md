@@ -16,9 +16,9 @@ Browser
 ## Frontend
 
 The Next.js App Router owns navigation, rendering, local interaction state, and
-accessible UI. TanStack Query owns server state and cache invalidation. The
-media element remains the playback clock; transcript components derive their
-active segment from its current time instead of maintaining a second clock.
+accessible UI. TanStack Query owns server state and cache invalidation. One
+deterministic playback clock drives the seek bar and active transcript segment,
+avoiding competing timestamps while real media remains out of scope.
 
 ## Backend
 
@@ -55,5 +55,5 @@ CORS allowlists are configured through environment variables.
 
 - Pytest covers services, repositories, validation, and API behavior.
 - Vitest and Testing Library cover frontend logic and components.
-- Playwright covers the library, transcript synchronization, and CRUD workflows.
+- Headless Chrome screenshots verify the responsive library and meeting views.
 - CI runs formatting, linting, type checking, unit tests, and production builds.
