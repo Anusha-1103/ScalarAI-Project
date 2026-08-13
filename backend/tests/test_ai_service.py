@@ -38,3 +38,31 @@ async def test_groq_analysis_contract_is_validated_and_mapped() -> None:
     assert analysis.chapters[0].start_in_seconds == 4.2
     assert analysis.action_items[0].assignee_name == "Anusha"
     service._complete.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_groq_analysis_normalizes_common_chapter_field_variations() -> None:
+    service = MeetingAIService(Settings(groq_api_key="test-key"))
+    service._complete = AsyncMock(  # type: ignore[method-assign]
+        return_value=json.dumps(
+            {
+                "overview": "The team approved the onboarding launch after accessibility review.",
+                "key_points": ["Launch is scheduled for Friday."],
+                "chapters": [{"description": "Launch decision", "timestamp": "4.20s"}],
+                "action_items": [],
+            }
+        )
+    )
+    segments = [
+        ParsedSegment(
+            speaker_name="Anusha",
+            text="The onboarding launch is approved after accessibility review.",
+            start_in_seconds=4.2,
+            end_in_seconds=9.0,
+        )
+    ]
+
+    analysis = await service.analyze(segments)
+
+    assert analysis.chapters[0].title == "Launch decision"
+    assert analysis.chapters[0].start_in_seconds == 4.2

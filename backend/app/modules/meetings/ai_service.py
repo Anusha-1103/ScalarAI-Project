@@ -119,6 +119,29 @@ class MeetingAIService:
             action_items=actions[:8],
         )
 
+    @staticmethod
+    def _normalize_analysis_payload(payload: object) -> object:
+        if not isinstance(payload, dict):
+            return payload
+        chapters = payload.get("chapters")
+        if isinstance(chapters, list):
+            normalized_chapters = []
+            for chapter in chapters:
+                if not isinstance(chapter, dict):
+                    normalized_chapters.append(chapter)
+                    continue
+                timestamp = chapter.get("start_in_seconds", chapter.get("timestamp", 0))
+                if isinstance(timestamp, str):
+                    timestamp = timestamp.strip().lower().removesuffix("s")
+                normalized_chapters.append(
+                    {
+                        "title": chapter.get("title") or chapter.get("description"),
+                        "start_in_seconds": timestamp,
+                    }
+                )
+            payload = {**payload, "chapters": normalized_chapters}
+        return payload
+
     async def analyze(
         self, segments: list[ParsedSegment], *, use_ai: bool = True
     ) -> TranscriptAnalysis:
@@ -131,6 +154,7 @@ class MeetingAIService:
                     "You are a precise meeting intelligence analyst. Return valid JSON only with "
                     "overview, key_points, chapters, and action_items. Never invent facts, owners, "
                     "deadlines, or decisions. Chapter timestamps must come from the transcript. "
+                    "Every chapter must contain title and start_in_seconds as a number. "
                     "Each action item must contain description and assignee_name (or null)."
                 ),
                 user=(
@@ -140,7 +164,8 @@ class MeetingAIService:
                 ),
                 json_mode=True,
             )
-            return TranscriptAnalysis.model_validate(json.loads(content))
+            payload = self._normalize_analysis_payload(json.loads(content))
+            return TranscriptAnalysis.model_validate(payload)
         except (httpx.HTTPError, KeyError, TypeError, ValueError, ValidationError) as error:
             logger.warning("Groq transcript analysis failed; using local fallback: %s", error)
             return fallback
