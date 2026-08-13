@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "EchoNote Runtime Architecture",
+    "output": "echonote-architecture.html",
+    "quality_profile": "showcase",
+    "viewBox": [1240, 700],
+    "views": [
+      {
+        "id": "meeting-request",
+        "label": "Meeting request path",
+        "focus": ["user", "web", "api", "repository", "database"],
+        "note": "Follow an authenticated meeting request from the browser to tenant-scoped durable state."
+      },
+      {
+        "id": "identity-boundary",
+        "label": "Identity boundary",
+        "focus": ["user", "web", "identity", "api", "database"],
+        "note": "Supabase issues the session; FastAPI resolves ownership before every data operation."
+      },
+      {
+        "id": "meeting-intelligence",
+        "label": "Meeting intelligence",
+        "focus": ["api", "groq", "fallback", "database"],
+        "note": "Groq enriches transcript evidence while local analysis keeps the workflow available."
+      },
+      {
+        "id": "production-health",
+        "label": "Production health",
+        "focus": ["monitor", "api", "database"],
+        "note": "A scheduled probe checks API readiness and the service reports database-backed health."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Workspace User",
+      "sublabel": "Desktop or mobile browser",
+      "pos": [40, 300],
+      "size": [145, 68]
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "EchoNote Web",
+      "sublabel": "Next.js 15 + React 19",
+      "tag": "Vercel",
+      "pos": [245, 300],
+      "size": [160, 68]
+    },
+    {
+      "id": "identity",
+      "type": "security",
+      "label": "Supabase Auth",
+      "sublabel": "Email, magic link, JWT",
+      "tag": "Tenant identity",
+      "pos": [245, 90],
+      "size": [160, 72]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Meeting API",
+      "sublabel": "FastAPI modular monolith",
+      "tag": "Render",
+      "pos": [500, 300],
+      "size": [170, 68]
+    },
+    {
+      "id": "repository",
+      "type": "backend",
+      "label": "Domain + Repository",
+      "sublabel": "Services, validation, ownership",
+      "pos": [750, 300],
+      "size": [175, 68]
+    },
+    {
+      "id": "database",
+      "type": "database",
+      "label": "Supabase PostgreSQL",
+      "sublabel": "Meetings, transcripts, actions",
+      "tag": "Durable state",
+      "pos": [1000, 300],
+      "size": [185, 72]
+    },
+    {
+      "id": "groq",
+      "type": "external",
+      "label": "Groq Inference",
+      "sublabel": "Grounded summaries and answers",
+      "tag": "Server-side key",
+      "pos": [1000, 90],
+      "size": [185, 72]
+    },
+    {
+      "id": "fallback",
+      "type": "backend",
+      "label": "Local Analyzer",
+      "sublabel": "Deterministic degraded mode",
+      "tag": "No provider required",
+      "pos": [750, 510],
+      "size": [175, 72]
+    },
+    {
+      "id": "monitor",
+      "type": "cloud",
+      "label": "Uptime Workflow",
+      "sublabel": "Scheduled health probe",
+      "tag": "GitHub Actions",
+      "pos": [40, 510],
+      "size": [145, 72]
+    }
+  ],
+  "connections": [
+    {
+      "id": "browser-to-web",
+      "from": "user",
+      "to": "web",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "web-to-api",
+      "from": "web",
+      "to": "api",
+      "label": "JSON + bearer token",
+      "variant": "emphasis",
+      "labelAt": [390, 382]
+    },
+    {
+      "id": "api-to-domain",
+      "from": "api",
+      "to": "repository",
+      "label": "validated use case",
+      "variant": "emphasis",
+      "labelDy": -28
+    },
+    {
+      "id": "domain-to-database",
+      "from": "repository",
+      "to": "database",
+      "label": "async SQL",
+      "variant": "emphasis"
+    },
+    {
+      "id": "web-auth-session",
+      "from": "web",
+      "to": "identity",
+      "label": "sign in / refresh",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "api-jwt-validation",
+      "from": "identity",
+      "to": "api",
+      "label": "JWT + JWKS",
+      "variant": "security"
+    },
+    {
+      "id": "api-to-groq",
+      "from": "api",
+      "to": "groq",
+      "label": "grounded inference",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "api-to-fallback",
+      "from": "api",
+      "to": "fallback",
+      "label": "provider fallback",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "health-probe",
+      "from": "monitor",
+      "to": "api",
+      "label": "GET /api/v1/health",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "Product surface",
+      "items": [
+        "Meeting library, transcript workspace, dashboard, and team tools",
+        "TanStack Query manages authenticated API state"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Data and tenancy",
+      "items": [
+        "Account ownership is resolved before repository access",
+        "New tenants receive editable sample records"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Resilient intelligence",
+      "items": [
+        "Groq generates grounded notes, chapters, actions, and answers",
+        "Local analysis preserves workflows during provider failures"
+      ]
+    }
+  ]
+}

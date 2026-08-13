@@ -9,8 +9,9 @@ saved: 2026-08-13T18:30:00Z
 
 ## Why
 
-The assignment requires persisted CRUD rather than a read-only visual prototype.
-Users need to bring meeting knowledge into the workspace and keep it accurate.
+EchoNote treats meeting knowledge as durable, editable workspace data rather
+than a read-only presentation. Users need to bring conversations into the
+workspace and keep them accurate.
 
 ## Behaviour
 

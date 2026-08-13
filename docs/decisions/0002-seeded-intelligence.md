@@ -1,4 +1,4 @@
-# Decision 0002: Seeded Meeting Intelligence
+# Decision 0002: Resilient Meeting Intelligence
 
 ## Status
 
@@ -6,18 +6,19 @@ Accepted on 2026-08-13 by Anusha.
 
 ## Context
 
-Real speech-to-text is explicitly outside the assignment scope. Calling an LLM
-would add credentials, cost, nondeterminism, latency, and deployment risk without
-improving the main evaluated interactions.
+Generated meeting intelligence improves review speed, but provider credentials,
+quotas, latency, and structured-output variation must not make transcript
+ingestion unavailable.
 
 ## Decision
 
-Persist realistic seeded summaries, chapters, transcript segments, and action
-items. New meetings accept pasted transcript text or a supported transcript
-file and receive a deterministic extractive summary suitable for demonstration.
+Use Groq from the backend to generate grounded summaries, chapters, action
+items, and answers. Normalize and validate provider output before persistence.
+Keep deterministic local analysis as the fallback for missing credentials,
+timeouts, quota exhaustion, invalid output, and local development.
 
 ## Consequences
 
-The application is immediately usable, works without external secrets, and can
-be evaluated consistently. The summarization provider boundary remains small so
-an LLM implementation could replace it later.
+The application gains useful synthesis without coupling core meeting ingestion
+to one provider. Generated output may differ between requests, while validated
+schemas, source evidence, tenant scoping, and fallback behavior remain stable.

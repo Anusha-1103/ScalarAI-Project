@@ -12,7 +12,7 @@ entire recording.
 - Individual contributors reviewing decisions and assigned follow-ups.
 - Managers scanning summaries across recurring team meetings.
 - Recruiters and customer-facing teams locating exact transcript moments.
-- Evaluators assessing full-stack architecture, usability, and code quality.
+- Product, engineering, recruiting, and customer teams sharing meeting context.
 
 ## Product Principles
 
@@ -34,6 +34,7 @@ entire recording.
 
 - The frontend uses Next.js with TypeScript.
 - The backend uses Python with FastAPI.
-- SQLite is the persistent database.
-- Real speech-to-text, authentication, and live meeting capture are out of scope.
-- The first release must remain practical to build, explain, and deploy within the assignment window.
+- Supabase Auth and PostgreSQL provide production identity and persistence.
+- SQLite mirrors the relational model for local development and tests.
+- Live meeting capture and speech-to-text are not part of the current release.
+- AI output must remain grounded in transcript evidence and degrade gracefully.
