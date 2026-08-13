@@ -100,6 +100,15 @@ def test_global_search_returns_timestamp_context(client: TestClient) -> None:
     assert all(result["segmentId"] and result["startInSeconds"] is not None for result in results)
 
 
+def test_global_search_understands_natural_language_questions(client: TestClient) -> None:
+    response = client.get("/api/v1/search", params={"q": "What did we decide about onboarding?"})
+
+    assert response.status_code == 200
+    results = response.json()["data"]
+    assert results
+    assert any("onboarding" in result["snippet"].lower() for result in results)
+
+
 def test_invalid_transcript_is_rejected(client: TestClient) -> None:
     response = client.post(
         "/api/v1/meetings",

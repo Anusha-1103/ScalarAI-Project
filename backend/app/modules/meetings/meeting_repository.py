@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -130,9 +130,13 @@ class MeetingRepository:
         return await self.resolve_account()
 
     async def search_transcripts(
-        self, query_text: str, limit: int
+        self, query_terms: list[str], limit: int
     ) -> list[tuple[Meeting, TranscriptSegment]]:
-        pattern = f"%{query_text.strip()}%"
+        patterns = [f"%{term}%" for term in query_terms]
+        relevance = sum(
+            (case((TranscriptSegment.text.ilike(pattern), 1), else_=0) for pattern in patterns),
+            start=case((TranscriptSegment.id.is_not(None), 0), else_=0),
+        )
         owner_id = await self._owner_id()
         result = await self.session.execute(
             select(Meeting, TranscriptSegment)
@@ -140,9 +144,13 @@ class MeetingRepository:
             .where(
                 Meeting.deleted_at_utc.is_(None),
                 Meeting.owner_account_id == owner_id,
-                TranscriptSegment.text.ilike(pattern),
+                or_(*(TranscriptSegment.text.ilike(pattern) for pattern in patterns)),
             )
-            .order_by(Meeting.meeting_at_utc.desc(), TranscriptSegment.sequence_number)
+            .order_by(
+                relevance.desc(),
+                Meeting.meeting_at_utc.desc(),
+                TranscriptSegment.sequence_number,
+            )
             .limit(limit)
         )
         return list(result.all())

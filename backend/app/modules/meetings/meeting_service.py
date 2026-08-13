@@ -1,4 +1,5 @@
 import math
+import re
 from datetime import UTC, datetime
 
 from app.common.exceptions import ApplicationError
@@ -368,7 +369,34 @@ class MeetingService:
     async def search(self, query_text: str, limit: int) -> list[SearchResult]:
         if not query_text.strip():
             return []
-        matches = await self.repository.search_transcripts(query_text, limit)
+        stop_words = {
+            "about",
+            "and",
+            "did",
+            "do",
+            "for",
+            "from",
+            "mention",
+            "the",
+            "was",
+            "were",
+            "what",
+            "when",
+            "where",
+            "which",
+            "who",
+            "with",
+        }
+        words = re.findall(r"[a-z0-9]+", query_text.lower())
+        terms = list(
+            dict.fromkeys(word for word in words if len(word) >= 3 and word not in stop_words)
+        )
+        terms.extend(
+            word[:-1]
+            for word in terms.copy()
+            if word.endswith("s") and len(word) > 4 and word[:-1] not in terms
+        )
+        matches = await self.repository.search_transcripts(terms or words, limit)
         return [
             SearchResult(
                 meeting_id=meeting.id,
