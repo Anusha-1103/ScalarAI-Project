@@ -1,6 +1,8 @@
-# EchoNote
+<div align="center">
+  <img src="docs/brand/echonote-lockup.svg" alt="EchoNote - AI meeting memory" width="620">
+</div>
 
-> AI meeting memory for searchable conversations, grounded answers, and follow-through.
+<p align="center"><strong>Search conversations. Ask with evidence. Turn decisions into action.</strong></p>
 
 [![Live](https://img.shields.io/badge/live-scalarai--project.vercel.app-5B61DC?style=flat-square)](https://scalarai-project.vercel.app)
 ![Next.js](https://img.shields.io/badge/Next.js-15-111827?style=flat-square&logo=nextdotjs)

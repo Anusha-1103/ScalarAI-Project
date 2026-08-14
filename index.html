@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="EchoNote product guide: AI meeting notes, searchable transcripts, grounded answers, and accountable follow-through.">
+  <link rel="icon" href="frontend/public/brand/favicon.svg" type="image/svg+xml">
+  <meta property="og:image" content="https://scalarai-project.vercel.app/og/echonote-github-social.png">
   <title>EchoNote | Product Guide</title>
   <style>
     :root {
@@ -28,7 +30,7 @@
     .topbar { position: absolute; inset: 0 0 auto; z-index: 5; height: 72px; color: white; border-bottom: 1px solid rgba(255,255,255,.25); }
     .topbar .shell { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
     .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
-    .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 6px; background: var(--purple); font-size: 13px; }
+    .brand-mark { width: 38px; height: 32px; display: block; object-fit: contain; }
     .nav { display: flex; align-items: center; gap: 25px; font-size: 13px; font-weight: 650; }
     .nav a { opacity: .9; }
     .nav a:hover { opacity: 1; }
@@ -136,7 +138,7 @@
 <body>
   <header class="topbar">
     <div class="shell">
-      <a class="brand" href="#top" aria-label="EchoNote product guide"><span class="brand-mark">EN</span>EchoNote</a>
+      <a class="brand" href="#top" aria-label="EchoNote product guide"><img class="brand-mark" src="frontend/public/brand/echonote-mark-dark.svg" alt="">EchoNote</a>
       <nav class="nav" aria-label="Product guide navigation">
         <a href="#workflow">Workflow</a>
         <a href="#architecture">Architecture</a>

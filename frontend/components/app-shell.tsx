@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  AudioLines,
   Bell,
   BookOpenText,
   CalendarDays,
@@ -19,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -105,11 +105,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (pathname.startsWith("/auth")) return children;
 
   if (profile.isLoading) {
-    return <div className="workspace-boot" role="status"><span className="brand-mark"><AudioLines size={20} /></span><strong>Opening your workspace</strong></div>;
+    return <div className="workspace-boot" role="status"><span className="brand-mark"><Image src="/brand/echonote-mark.svg" alt="" width={26} height={22} priority /></span><strong>Opening your workspace</strong></div>;
   }
 
   if (profile.isError) {
-    return <div className="workspace-boot"><span className="brand-mark"><AudioLines size={20} /></span><strong>We couldn&apos;t open your workspace</strong><button className="button button-secondary" onClick={() => profile.refetch()}>Try again</button></div>;
+    return <div className="workspace-boot"><span className="brand-mark"><Image src="/brand/echonote-mark.svg" alt="" width={26} height={22} priority /></span><strong>We couldn&apos;t open your workspace</strong><button className="button button-secondary" onClick={() => profile.refetch()}>Try again</button></div>;
   }
 
   const displayName = profile.data?.displayName?.trim() || "Your account";
@@ -130,7 +130,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <aside id="workspace-navigation" className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
         <div className="brand-row">
           <Link href="/meetings" className="brand" aria-label="EchoNote meetings">
-            <span className="brand-mark"><AudioLines size={19} strokeWidth={2.2} /></span>
+            <span className="brand-mark"><Image src="/brand/echonote-mark.svg" alt="" width={27} height={23} priority /></span>
             <span className="brand-copy"><strong>EchoNote</strong><small>Meeting intelligence</small></span>
           </Link>
           <button className="icon-button sidebar-close" onClick={() => setMobileOpen(false)} aria-label="Close navigation">

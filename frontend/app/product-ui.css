@@ -60,8 +60,6 @@ body {
 .brand-mark {
   width: 34px;
   height: 34px;
-  border-radius: 8px;
-  box-shadow: 0 5px 14px rgba(88, 86, 214, 0.24);
 }
 
 .brand-copy {
@@ -980,7 +978,7 @@ h3 {
   position: relative;
   overflow: hidden;
   padding: 42px 58px;
-  background: #20244f;
+  background: #0f172a;
 }
 
 .auth-context::after {
@@ -1000,6 +998,21 @@ h3 {
 .auth-context > small {
   position: relative;
   z-index: 1;
+}
+
+.auth-brand {
+  height: 40px;
+}
+
+.auth-brand img,
+.auth-form-logo {
+  width: 156px;
+  height: 40px;
+  display: block;
+}
+
+.auth-form-logo {
+  display: none;
 }
 
 .auth-message h1 {
@@ -1059,6 +1072,11 @@ h3 {
 }
 
 @media (max-width: 780px) {
+  .auth-form-logo {
+    display: block;
+    margin-bottom: 16px;
+  }
+
   .sidebar {
     left: -264px;
     width: 248px;

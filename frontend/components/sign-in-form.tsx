@@ -1,6 +1,7 @@
 "use client";
 
-import { AudioLines, CheckCircle2, LockKeyhole, Mail } from "lucide-react";
+import { CheckCircle2, LockKeyhole, Mail } from "lucide-react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { toast } from "sonner";
@@ -56,12 +57,13 @@ export function SignInForm() {
   return (
     <main className="auth-page">
       <section className="auth-context">
-        <div className="auth-brand"><span className="brand-mark"><AudioLines size={19} /></span>EchoNote</div>
+        <div className="auth-brand"><Image src="/brand/echonote-logo-dark.svg" alt="EchoNote" width={156} height={40} priority /></div>
         <div className="auth-message"><p className="eyebrow">Your meeting memory</p><h1>Turn every conversation into work that moves forward.</h1><p>Searchable transcripts, reliable follow-ups, and a complete record of every decision.</p><ul><li><CheckCircle2 size={17} />Private workspace for every account</li><li><CheckCircle2 size={17} />Meeting notes ready in one place</li><li><CheckCircle2 size={17} />Tasks stay connected to context</li></ul></div>
         <small>Secure authentication and data isolation powered by Supabase.</small>
       </section>
       <section className="auth-form-panel">
         <form className="auth-form" onSubmit={submit}>
+          <Image className="auth-form-logo" src="/brand/echonote-logo.svg" alt="EchoNote" width={156} height={40} priority />
           <div><p className="eyebrow">Welcome to EchoNote</p><h2>{mode === "signin" ? "Sign in to your workspace" : "Create your workspace"}</h2><p>{mode === "signin" ? "Continue where your conversations left off." : "Start with a private meeting library of your own."}</p></div>
           {mode === "signup" && <label>Full name<input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Anusha Sharma" /></label>}
           <label>Email address<span className="auth-input"><Mail size={16} /><input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" /></span></label>
