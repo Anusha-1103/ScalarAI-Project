@@ -41,3 +41,4 @@ uploads/
 .DS_Store
 *.swp
 *.swo
+.vercel
