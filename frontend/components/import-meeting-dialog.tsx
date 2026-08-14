@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, Upload, X } from "lucide-react";
+import { CheckCircle2, FileText, Upload, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -10,8 +11,11 @@ import { MeetingDetail } from "@/lib/types";
 
 export function ImportMeetingDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [mode, setMode] = useState<"paste" | "file">("paste");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState("");
 
   const mutation = useMutation({
     mutationFn: async (form: HTMLFormElement) => {
@@ -44,10 +48,11 @@ export function ImportMeetingDialog({ open, onClose }: { open: boolean; onClose:
         }),
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (meeting) => {
       await queryClient.invalidateQueries({ queryKey: ["meetings"] });
-      toast.success("Meeting added to your library");
+      toast.success("Transcript is ready to review");
       onClose();
+      router.push(`/meetings/${meeting.id}`);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -58,6 +63,15 @@ export function ImportMeetingDialog({ open, onClose }: { open: boolean; onClose:
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     mutation.mutate(event.currentTarget);
+  }
+
+  async function handleFileChange(file: File | null) {
+    setSelectedFile(file);
+    setFilePreview("");
+    if (!file) return;
+    const text = await file.slice(0, 1_600).text();
+    const readableLines = text.split(/\r?\n/).filter(Boolean);
+    setFilePreview(readableLines.slice(0, 3).join(" ").slice(0, 240));
   }
 
   return (
@@ -80,11 +94,11 @@ export function ImportMeetingDialog({ open, onClose }: { open: boolean; onClose:
         {mode === "paste" ? (
           <label>Transcript<textarea name="transcript" required minLength={10} rows={9} placeholder={"Anusha: Let's review the launch plan.\nMaya: I will share the final checklist today."} /></label>
         ) : (
-          <label className="file-drop">Transcript file<input name="transcriptFile" type="file" required accept=".txt,.vtt,.json" /><span><Upload size={22} />Choose a TXT, VTT, or JSON file</span></label>
+          <label className={`file-drop ${selectedFile ? "file-selected" : ""}`}>Transcript file<input name="transcriptFile" type="file" required accept=".txt,.vtt,.json" onChange={(event) => void handleFileChange(event.currentTarget.files?.[0] ?? null)} /><span>{selectedFile ? <><CheckCircle2 size={22} /><strong>{selectedFile.name}</strong><small>{Math.max(1, Math.ceil(selectedFile.size / 1024))} KB · ready to turn into timestamped dialogue</small>{filePreview && <em>{filePreview}</em>}</> : <><Upload size={22} /><strong>Choose a TXT, VTT, or JSON file</strong><small>We’ll turn this into a searchable, timestamped transcript.</small></>}</span></label>
         )}
         <div className="modal-actions">
           <button className="button button-secondary" type="button" onClick={onClose}>Cancel</button>
-          <button className="button button-primary" type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Adding…" : "Add meeting"}</button>
+          <button className="button button-primary" type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Creating transcript…" : mode === "file" ? "Create transcript" : "Add meeting"}</button>
         </div>
       </form>
     </dialog>

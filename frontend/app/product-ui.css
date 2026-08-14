@@ -829,6 +829,40 @@ h3 {
   border-radius: 8px;
 }
 
+.file-drop span strong,
+.file-drop span small,
+.file-drop span em {
+  max-width: min(100%, 460px);
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-drop span strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.file-drop span small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.file-drop span em {
+  color: #607087;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.file-drop.file-selected span {
+  border-color: #6cc7ab;
+  background: #f0fbf7;
+  color: #08785c;
+}
+
 .search-dialog {
   grid-template-rows: 62px minmax(160px, auto) 40px;
 }
@@ -1396,6 +1430,36 @@ h3 {
   border-color: var(--line);
   color: var(--ink);
   background: var(--surface);
+}
+
+[data-theme="dark"] .segmented-control,
+[data-theme="dark"] .file-drop span,
+[data-theme="dark"] .meeting-player,
+[data-theme="dark"] .smart-filters button,
+[data-theme="dark"] .segment-editor textarea {
+  border-color: var(--line);
+  color: var(--ink);
+  background: #111c2e;
+}
+
+[data-theme="dark"] .segmented-control .selected {
+  color: #dceaff;
+  background: #1a3458;
+  box-shadow: inset 0 0 0 1px #31517d;
+}
+
+[data-theme="dark"] .file-drop.file-selected span {
+  border-color: #2e7c67;
+  background: #102d28;
+}
+
+[data-theme="dark"] .file-drop small,
+[data-theme="dark"] .file-drop em {
+  color: #a4b7d0;
+}
+
+[data-theme="dark"] .player-progress input {
+  background: linear-gradient(to right, #5f9eff var(--progress), #314159 var(--progress));
 }
 
 [data-theme="dark"] .meeting-row,

@@ -152,7 +152,9 @@ async def provision_account_workspace(session, account: Account) -> None:
     service = MeetingService(repository)
     for seed in SEED_MEETINGS:
         if meeting_id := existing_meetings.get(seed["title"]):
-            await service.update_meeting(meeting_id, MeetingUpdate(tags=seed["tags"]))
+            existing = await service.get_meeting(meeting_id)
+            if not existing.tags:
+                await service.update_meeting(meeting_id, MeetingUpdate(tags=seed["tags"]))
             continue
         detail = await service.create_meeting(
             MeetingCreate(
