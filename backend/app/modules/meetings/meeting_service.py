@@ -180,6 +180,13 @@ class MeetingService:
             open_action_items=open_actions,
         )
 
+    async def provision_sample_workspace(self) -> DashboardRead:
+        from app.seed_data import provision_account_workspace
+
+        account = await self.repository.resolve_account()
+        await provision_account_workspace(self.repository.session, account)
+        return await self.get_dashboard(50)
+
     async def get_meeting(self, meeting_id: str) -> MeetingDetail:
         meeting = await self.repository.get_meeting(meeting_id)
         if not meeting:

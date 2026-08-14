@@ -1,10 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, CheckCircle2, Clock3, ListChecks, RefreshCw, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, ListChecks, Plus, RefreshCw, Users } from "lucide-react";
 import Link from "next/link";
 
 import { AvatarStack } from "@/components/avatar-stack";
+import { SampleWorkspaceButton } from "@/components/sample-workspace-button";
 import { getDashboard, getProfile } from "@/lib/api";
 import { formatDuration, formatMeetingDate } from "@/lib/format";
 
@@ -28,6 +29,7 @@ export function DashboardWorkspace() {
   return (
     <section className="page dashboard-page">
       <div className="page-heading"><div><p className="eyebrow">Workspace pulse</p><h1>{greeting}, {accountName}</h1><p className="page-subtitle">Here is what your conversations are moving forward.</p></div><Link className="button button-primary" href="/meetings">Review meetings<ArrowRight size={16} /></Link></div>
+      {!meetings.length && <section className="dashboard-onboarding"><span className="metric-icon metric-purple"><ListChecks size={20} /></span><div><p className="eyebrow">Private workspace</p><h2>Bring your first conversation into focus</h2><p>Upload a transcript to create notes and follow-ups, or explore the product with optional sample meetings.</p></div><div className="empty-state-actions"><Link className="button button-primary" href="/meetings"><Plus size={16} />Add meeting</Link><SampleWorkspaceButton /></div></section>}
       <div className="metric-strip"><div><span className="metric-icon metric-purple"><Clock3 size={18} /></span><span><small>Conversation time</small><strong>{formatDuration(totalSeconds)}</strong><em>Across {meetings.length} meetings</em></span></div><div><span className="metric-icon metric-green"><ListChecks size={18} /></span><span><small>Open action items</small><strong>{openActionItems.length}</strong><em>{actionCount} captured in total</em></span></div><div><span className="metric-icon metric-gold"><Users size={18} /></span><span><small>People in meetings</small><strong>{people.size}</strong><em>Active conversation network</em></span></div><div><span className="metric-icon metric-blue"><CheckCircle2 size={18} /></span><span><small>Task completion</small><strong>{actionCount ? Math.round((completedActionCount / actionCount) * 100) : 0}%</strong><em>{completedActionCount} follow-ups closed</em></span></div></div>
       <div className="dashboard-grid">
         <section className="dashboard-section"><header><div><p className="eyebrow">Recent activity</p><h2>Meeting volume</h2></div><span>Last {meetings.length} meetings</span></header><div className="meeting-chart">{meetings.slice().reverse().map((meeting) => <div key={meeting.id}><span style={{ height: `${Math.max((meeting.durationInSeconds / maxDuration) * 100, 16)}%` }} title={`${meeting.title}: ${formatDuration(meeting.durationInSeconds)}`} /><small>{new Date(meeting.meetingAtUtc).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</small></div>)}</div></section>

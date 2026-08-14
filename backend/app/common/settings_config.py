@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     groq_model: str = "llama-3.3-70b-versatile"
     groq_base_url: str = "https://api.groq.com/openai/v1"
     groq_timeout_seconds: float = 20.0
-    seed_new_accounts: bool = True
+    seed_demo_account: bool = True
     demo_account_email: str = "demo@echonote.app"
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="ECHONOTE_")

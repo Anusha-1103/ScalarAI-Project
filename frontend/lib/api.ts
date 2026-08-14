@@ -81,6 +81,10 @@ export function getDashboard(): Promise<DashboardData> {
   return apiRequest("/dashboard?limit=50");
 }
 
+export function provisionSampleWorkspace(): Promise<DashboardData> {
+  return apiRequest("/me/sample-workspace", { method: "POST" });
+}
+
 export function getMeetings(params: URLSearchParams): Promise<PaginatedMeetings> {
   return apiRequest(`/meetings?${params.toString()}`);
 }

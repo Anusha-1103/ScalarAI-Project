@@ -60,6 +60,13 @@ async def get_dashboard(
     return ApiResponse(data=await service.get_dashboard(limit))
 
 
+@router.post("/me/sample-workspace", response_model=ApiResponse[DashboardRead], tags=["Account"])
+async def provision_sample_workspace(
+    service: MeetingServiceDependency,
+) -> ApiResponse[DashboardRead]:
+    return ApiResponse(data=await service.provision_sample_workspace())
+
+
 @router.get("/meetings", response_model=ApiResponse[PaginatedData[MeetingListItem]])
 async def list_meetings(
     service: MeetingServiceDependency,

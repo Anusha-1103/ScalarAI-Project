@@ -25,7 +25,7 @@ services:
         sync: false
       - key: ECHONOTE_GROQ_MODEL
         value: llama-3.3-70b-versatile
-      - key: ECHONOTE_SEED_NEW_ACCOUNTS
+      - key: ECHONOTE_SEED_DEMO_ACCOUNT
         value: true
       - key: ECHONOTE_DEMO_ACCOUNT_EMAIL
         value: demo@echonote.app

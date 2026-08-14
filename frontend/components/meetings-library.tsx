@@ -7,6 +7,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 
 import { AvatarStack } from "@/components/avatar-stack";
 import { ImportMeetingDialog } from "@/components/import-meeting-dialog";
+import { SampleWorkspaceButton } from "@/components/sample-workspace-button";
 import { getMeetings } from "@/lib/api";
 import { formatDuration, formatMeetingDate } from "@/lib/format";
 
@@ -57,7 +58,7 @@ export function MeetingsLibrary() {
         {meetings.data?.items.length === 0 && (
           hasActiveFilters
             ? <div className="state-panel"><Search size={24} /><h2>No matching meetings</h2><p>Try a different title, person, or date range.</p><button className="button button-secondary" onClick={() => { setSearch(""); setParticipant(""); setDateFrom(""); setDateTo(""); }}>Clear filters</button></div>
-            : <div className="state-panel"><CalendarDays size={24} /><h2>Your first meeting starts here</h2><p>Add a transcript to generate notes, chapters, and follow-ups.</p><button className="button button-primary" onClick={() => setImportOpen(true)}><Plus size={16} />Add meeting</button></div>
+            : <div className="state-panel"><CalendarDays size={24} /><h2>Your first meeting starts here</h2><p>Add a transcript of your own, or explore a private sample workspace first.</p><div className="empty-state-actions"><button className="button button-primary" onClick={() => setImportOpen(true)}><Plus size={16} />Add meeting</button><SampleWorkspaceButton /></div></div>
         )}
         {meetings.data?.items.map((meeting) => (
           <Link href={`/meetings/${meeting.id}`} className="meeting-row" key={meeting.id}>

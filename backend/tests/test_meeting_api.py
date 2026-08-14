@@ -1,6 +1,12 @@
 from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
+from sqlalchemy import func, select
+
+from app.common.auth import CurrentPrincipal
+from app.common.database import async_session_factory
+from app.modules.meetings.meeting_models import Meeting
+from app.modules.meetings.meeting_repository import MeetingRepository
 
 
 def test_seeded_meeting_library_and_detail(client: TestClient) -> None:
@@ -45,6 +51,24 @@ def test_api_responses_include_security_headers(client: TestClient) -> None:
     assert response.headers["cache-control"] == "no-store"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
+
+
+async def test_new_personal_account_starts_without_sample_meetings() -> None:
+    async with async_session_factory() as session:
+        repository = MeetingRepository(
+            session,
+            CurrentPrincipal(
+                auth_user_id="personal-account-without-samples",
+                email="personal@example.com",
+                display_name="Personal User",
+            ),
+        )
+        account = await repository.resolve_account()
+        meeting_count = await session.scalar(
+            select(func.count(Meeting.id)).where(Meeting.owner_account_id == account.id)
+        )
+
+    assert meeting_count == 0
 
 
 def test_library_search_filter_and_sort(client: TestClient) -> None:

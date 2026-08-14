@@ -60,7 +60,12 @@ class MeetingRepository:
         if not account:
             raise RuntimeError("No application account is configured")
         self.account_id = account.id
-        if created and get_settings().seed_new_accounts:
+        settings = get_settings()
+        if (
+            created
+            and settings.seed_demo_account
+            and account.email.casefold() == settings.demo_account_email.casefold()
+        ):
             from app.seed_data import provision_account_workspace
 
             await provision_account_workspace(self.session, account)
