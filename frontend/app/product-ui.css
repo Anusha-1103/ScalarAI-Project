@@ -1067,6 +1067,84 @@ h3 {
   min-height: 44px;
 }
 
+.demo-account {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  background: #f5f7ff;
+}
+
+.demo-account > div {
+  display: grid;
+  gap: 3px;
+}
+
+.demo-account span,
+.demo-account dt {
+  color: #5b6282;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.demo-account strong {
+  color: #1e2852;
+  font-size: 13px;
+}
+
+.demo-account dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+}
+
+.demo-account dl > div {
+  min-width: 0;
+}
+
+.demo-account dt,
+.demo-account dd {
+  margin: 0;
+}
+
+.demo-account dd {
+  overflow-wrap: anywhere;
+  color: #25315f;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.demo-account button {
+  justify-self: start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+html[data-theme="dark"] .demo-account {
+  border-color: #33415f;
+  background: #172033;
+}
+
+html[data-theme="dark"] .demo-account span,
+html[data-theme="dark"] .demo-account dt {
+  color: #9fb0cf;
+}
+
+html[data-theme="dark"] .demo-account strong,
+html[data-theme="dark"] .demo-account dd {
+  color: #edf3ff;
+}
+
 @media (max-width: 1180px) {
   .topbar {
     grid-template-columns: 170px minmax(240px, 440px) 150px;

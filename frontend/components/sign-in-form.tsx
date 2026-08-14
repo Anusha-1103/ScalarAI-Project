@@ -54,6 +54,12 @@ export function SignInForm() {
     else toast.success("Magic link sent to your inbox");
   }
 
+  function useDemoAccount() {
+    setEmail("demo@echonote.app");
+    setPassword("EchoNoteDemo#2026!");
+    toast.success("Demo credentials added — sign in to explore the workspace.");
+  }
+
   return (
     <main className="auth-page">
       <section className="auth-context">
@@ -68,6 +74,7 @@ export function SignInForm() {
           {mode === "signup" && <label>Full name<input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Anusha Sharma" /></label>}
           <label>Email address<span className="auth-input"><Mail size={16} /><input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" /></span></label>
           <label>Password<span className="auth-input"><LockKeyhole size={16} /><input required minLength={8} type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" /></span></label>
+          {mode === "signin" && <aside className="demo-account" aria-label="Demo account credentials"><div><span>Explore the demo workspace</span><strong>Ready-made meetings, transcripts, and follow-ups</strong></div><dl><div><dt>Email</dt><dd>demo@echonote.app</dd></div><div><dt>Password</dt><dd>EchoNoteDemo#2026!</dd></div></dl><button type="button" onClick={useDemoAccount}>Use demo credentials</button></aside>}
           <button className="button button-primary auth-submit" disabled={loading}>{loading ? "Please wait..." : mode === "signin" ? "Sign in" : "Create account"}</button>
           <div className="auth-divider"><span>or</span></div>
           <button type="button" className="button button-secondary auth-submit" onClick={sendMagicLink} disabled={loading || !email}><Mail size={16} />Email me a magic link</button>

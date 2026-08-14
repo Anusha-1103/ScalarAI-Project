@@ -98,7 +98,7 @@ export function ImportMeetingDialog({ open, onClose }: { open: boolean; onClose:
         )}
         <div className="modal-actions">
           <button className="button button-secondary" type="button" onClick={onClose}>Cancel</button>
-          <button className="button button-primary" type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Creating transcript…" : mode === "file" ? "Create transcript" : "Add meeting"}</button>
+          <button className="button button-primary" type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Adding meeting…" : "Add meeting"}</button>
         </div>
       </form>
     </dialog>
