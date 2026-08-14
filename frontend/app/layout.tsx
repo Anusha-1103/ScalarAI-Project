@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 
 import { AppShell } from "@/components/app-shell";
 import { Providers } from "@/components/providers";
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body>
         <Providers><AppShell>{children}</AppShell></Providers>
+        <Analytics />
       </body>
     </html>
   );
