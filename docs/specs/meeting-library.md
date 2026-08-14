@@ -22,7 +22,7 @@ layout and offer a clear recovery action.
 
 ## Acceptance criteria
 
-- At least six realistic seeded meetings are visible on first launch.
+- The demo account includes at least six realistic meetings; personal accounts receive a clear empty state with upload and optional sample-workspace actions.
 - Every row shows title, local date and time, duration, and participant avatars.
 - Search is case-insensitive and combines correctly with date and participant filters.
 - The user can sort newest-first or oldest-first.

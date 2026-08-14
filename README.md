@@ -52,7 +52,7 @@ Provider integrations are presented as staged connection workflows. Production G
 5. **Ask Echo** a question and follow its source links back to the supporting transcript lines.
 6. **Track follow-ups** from the meeting workspace or dashboard until the work is complete.
 
-New accounts receive an isolated set of editable sample records on first use. These are inserted into the database for that account; the frontend does not render a shared hardcoded meeting list.
+Personal accounts start with a private, empty meeting library. Users can upload their own transcript or explicitly create an isolated, editable sample workspace from the empty state. The dedicated demo account remains pre-populated; the frontend never renders a shared hardcoded meeting list.
 
 ## Architecture
 

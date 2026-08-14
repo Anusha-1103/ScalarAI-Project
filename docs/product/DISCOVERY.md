@@ -20,7 +20,7 @@ entire recording.
 - Keep transcript text and playback position synchronized in both directions.
 - Preserve user edits and status changes across sessions.
 - Favor clear, dense productivity UI over decorative dashboard design.
-- Seed realistic data so every important workflow is demonstrable immediately.
+- Keep realistic data in the demo account and offer it to personal accounts only through an explicit sample-workspace action.
 
 ## Success Signals
 

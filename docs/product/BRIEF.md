@@ -42,7 +42,7 @@ resulting action item without replaying the full call or relying on separate not
 - Next.js and TypeScript frontend; FastAPI backend; SQLite database.
 - REST endpoints are versioned under `/api/v1` and documented through OpenAPI.
 - A default logged-in account is assumed; no authentication flow is required.
-- Seed data provides multiple realistic, complete meetings on first launch.
+- The dedicated demo account includes realistic meetings; personal accounts opt into sample content explicitly.
 - The experience is responsive and keyboard accessible.
 
 ## Out of Scope
