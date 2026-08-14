@@ -1,0 +1,10 @@
+.git
+.github
+.tools
+**/.next
+**/.pytest_cache
+**/.ruff_cache
+**/.venv
+**/node_modules
+**/*.db
+supabase/.temp
