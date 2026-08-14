@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import noload, selectinload
 
 from app.common.auth import CurrentPrincipal
 from app.common.settings_config import get_settings
@@ -13,6 +13,7 @@ from app.modules.meetings.meeting_models import (
     Meeting,
     MeetingMoment,
     MeetingParticipant,
+    MeetingSummary,
     Participant,
     TranscriptSegment,
 )
@@ -79,6 +80,17 @@ class MeetingRepository:
             selectinload(Meeting.moments),
         )
 
+    @staticmethod
+    def _with_list() -> tuple:
+        return (
+            selectinload(Meeting.participants).selectinload(MeetingParticipant.participant),
+            selectinload(Meeting.summary).noload(MeetingSummary.key_points),
+            selectinload(Meeting.action_items),
+            noload(Meeting.transcript_segments),
+            noload(Meeting.chapters),
+            noload(Meeting.moments),
+        )
+
     async def list_meetings(
         self,
         *,
@@ -117,12 +129,23 @@ class MeetingRepository:
             Meeting.meeting_at_utc.asc() if sort_order == "asc" else Meeting.meeting_at_utc.desc()
         )
         result = await self.session.scalars(
-            query.options(*self._with_detail())
+            query.options(*self._with_list())
             .order_by(ordering)
             .offset((page - 1) * limit)
             .limit(limit)
         )
         return list(result.unique().all()), total
+
+    async def get_dashboard_meetings(self, limit: int) -> list[Meeting]:
+        owner_id = await self._owner_id()
+        result = await self.session.scalars(
+            select(Meeting)
+            .where(Meeting.deleted_at_utc.is_(None), Meeting.owner_account_id == owner_id)
+            .options(*self._with_list())
+            .order_by(Meeting.meeting_at_utc.desc())
+            .limit(limit)
+        )
+        return list(result.unique().all())
 
     async def get_meeting(self, meeting_id: str) -> Meeting | None:
         owner_id = await self._owner_id()
@@ -137,8 +160,16 @@ class MeetingRepository:
         )
 
     async def find_participant(self, name: str) -> Participant | None:
+        owner_id = await self._owner_id()
         return await self.session.scalar(
-            select(Participant).where(func.lower(Participant.name) == name.strip().lower())
+            select(Participant)
+            .join(MeetingParticipant, MeetingParticipant.participant_id == Participant.id)
+            .join(Meeting, Meeting.id == MeetingParticipant.meeting_id)
+            .where(
+                func.lower(Participant.name) == name.strip().lower(),
+                Meeting.owner_account_id == owner_id,
+            )
+            .limit(1)
         )
 
     async def get_default_account(self) -> Account | None:

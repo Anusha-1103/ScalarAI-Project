@@ -1,9 +1,12 @@
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+
 import {
   AccountProfile,
   ActionItem,
   ActionItemInput,
   AskAnswer,
   ApiResponse,
+  DashboardData,
   MeetingDetail,
   MeetingMoment,
   MeetingUpdateInput,
@@ -24,14 +27,41 @@ export class ApiRequestError extends Error {
   }
 }
 
-export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+let accessToken: { value: string | null; expiresAt: number } | null = null;
+let accessTokenRequest: Promise<string | null> | null = null;
+let authListenerRegistered = false;
+
+async function getAccessToken(): Promise<string | null> {
   const supabase = createClient();
-  const session = supabase ? (await supabase.auth.getSession()).data.session : null;
+  if (!supabase) return null;
+  if (!authListenerRegistered) {
+    supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+      accessToken = session
+        ? { value: session.access_token, expiresAt: (session.expires_at ?? 0) * 1_000 }
+        : { value: null, expiresAt: Number.POSITIVE_INFINITY };
+    });
+    authListenerRegistered = true;
+  }
+  if (accessToken && accessToken.expiresAt > Date.now() + 60_000) return accessToken.value;
+  accessTokenRequest ??= supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
+    const session = data.session;
+    accessToken = session
+      ? { value: session.access_token, expiresAt: (session.expires_at ?? 0) * 1_000 }
+      : { value: null, expiresAt: Number.POSITIVE_INFINITY };
+    return accessToken.value;
+  }).finally(() => {
+    accessTokenRequest = null;
+  });
+  return accessTokenRequest;
+}
+
+export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await getAccessToken();
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
   });
@@ -45,6 +75,10 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
 
 export function getProfile(): Promise<AccountProfile> {
   return apiRequest("/me");
+}
+
+export function getDashboard(): Promise<DashboardData> {
+  return apiRequest("/dashboard?limit=50");
 }
 
 export function getMeetings(params: URLSearchParams): Promise<PaginatedMeetings> {

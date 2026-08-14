@@ -24,6 +24,8 @@ from app.modules.meetings.meeting_schemas import (
     ActionItemUpdate,
     AskAnswer,
     ChapterRead,
+    DashboardActionItem,
+    DashboardRead,
     MeetingCreate,
     MeetingDetail,
     MeetingListItem,
@@ -160,6 +162,23 @@ class MeetingService:
             limit=limit,
         )
         return [self._list_item(meeting) for meeting in meetings], total
+
+    async def get_dashboard(self, limit: int) -> DashboardRead:
+        meetings = await self.repository.get_dashboard_meetings(limit)
+        open_actions = [
+            DashboardActionItem(
+                **self._action_item_read(item).model_dump(),
+                meeting_id=meeting.id,
+                meeting_title=meeting.title,
+            )
+            for meeting in meetings
+            for item in meeting.action_items
+            if not item.is_completed
+        ]
+        return DashboardRead(
+            meetings=[self._list_item(meeting) for meeting in meetings],
+            open_action_items=open_actions,
+        )
 
     async def get_meeting(self, meeting_id: str) -> MeetingDetail:
         meeting = await self.repository.get_meeting(meeting_id)
@@ -321,7 +340,16 @@ class MeetingService:
         item = await self.repository.get_action_item(action_item_id)
         if not item:
             raise ApplicationError("ACTION_ITEM_NOT_FOUND", "Action item does not exist", 404)
-        for field, value in payload.model_dump(exclude_unset=True).items():
+        updates = payload.model_dump(exclude_unset=True)
+        assignee_id = updates.get("assignee_participant_id")
+        if assignee_id:
+            meeting = await self.repository.get_meeting(item.meeting_id)
+            participant_ids = {link.participant_id for link in meeting.participants}  # type: ignore[union-attr]
+            if assignee_id not in participant_ids:
+                raise ApplicationError(
+                    "INVALID_ASSIGNEE", "Assignee is not a meeting participant", 422
+                )
+        for field, value in updates.items():
             setattr(item, field, value.strip() if field == "description" and value else value)
         await self.repository.commit()
         saved = await self.repository.get_action_item(action_item_id)

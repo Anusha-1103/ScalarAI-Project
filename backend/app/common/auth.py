@@ -5,6 +5,7 @@ from typing import Annotated, Any
 import jwt
 from fastapi import Depends, Header
 from jwt import PyJWKClient
+from jwt.exceptions import PyJWKClientError
 
 from app.common.exceptions import ApplicationError
 from app.common.settings_config import get_settings
@@ -33,6 +34,7 @@ def _decode_token(token: str) -> dict[str, Any]:
                 algorithms=["HS256"],
                 audience="authenticated",
                 issuer=issuer,
+                options={"require": ["exp", "sub", "aud", "iss"]},
             )
         key = get_jwk_client(settings.supabase_url or "").get_signing_key_from_jwt(token)
         return jwt.decode(
@@ -41,8 +43,9 @@ def _decode_token(token: str) -> dict[str, Any]:
             algorithms=["RS256", "ES256"],
             audience="authenticated",
             issuer=issuer,
+            options={"require": ["exp", "sub", "aud", "iss"]},
         )
-    except jwt.PyJWTError as error:
+    except (jwt.PyJWTError, PyJWKClientError) as error:
         raise ApplicationError(
             "INVALID_SESSION", "Your session is invalid or expired", 401
         ) from error
@@ -54,9 +57,10 @@ async def get_current_principal(
     settings = get_settings()
     if not settings.auth_enabled:
         return CurrentPrincipal(None, "anusha@echonote.local", "Anusha")
-    if not authorization or not authorization.startswith("Bearer "):
+    scheme, _, token = (authorization or "").partition(" ")
+    if scheme.casefold() != "bearer" or not token.strip():
         raise ApplicationError("AUTHENTICATION_REQUIRED", "Please sign in to continue", 401)
-    claims = _decode_token(authorization.removeprefix("Bearer ").strip())
+    claims = _decode_token(token.strip())
     metadata = claims.get("user_metadata") or {}
     email = str(claims.get("email") or "")
     return CurrentPrincipal(

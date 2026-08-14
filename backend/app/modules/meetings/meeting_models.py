@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -38,6 +39,12 @@ class Meeting(TimestampMixin, Base):
     __tablename__ = "Meeting"
     __table_args__ = (
         CheckConstraint('"durationInSeconds" >= 0', name="meeting_duration_non_negative"),
+        Index(
+            "idx_meeting_owner_active_date",
+            "ownerAccountId",
+            "deletedAtUtc",
+            "meetingAtUtc",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -189,6 +196,7 @@ class Chapter(Base):
 
 class ActionItem(TimestampMixin, Base):
     __tablename__ = "ActionItem"
+    __table_args__ = (Index("idx_action_item_meeting_completion", "meetingId", "isCompleted"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     meeting_id: Mapped[str] = mapped_column(

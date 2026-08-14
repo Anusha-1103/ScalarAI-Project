@@ -21,6 +21,7 @@ from app.modules.meetings.meeting_schemas import (
     ActionItemUpdate,
     AskAnswer,
     AskRequest,
+    DashboardRead,
     MeetingCreate,
     MeetingDetail,
     MeetingListItem,
@@ -49,6 +50,14 @@ MeetingServiceDependency = Annotated[MeetingService, Depends(get_meeting_service
 @router.get("/me", response_model=ApiResponse[AccountRead], tags=["Account"])
 async def get_current_account(service: MeetingServiceDependency) -> ApiResponse[AccountRead]:
     return ApiResponse(data=await service.get_account())
+
+
+@router.get("/dashboard", response_model=ApiResponse[DashboardRead])
+async def get_dashboard(
+    service: MeetingServiceDependency,
+    limit: int = Query(default=50, ge=1, le=100),
+) -> ApiResponse[DashboardRead]:
+    return ApiResponse(data=await service.get_dashboard(limit))
 
 
 @router.get("/meetings", response_model=ApiResponse[PaginatedData[MeetingListItem]])

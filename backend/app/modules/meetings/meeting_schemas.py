@@ -98,6 +98,16 @@ class MeetingDetail(MeetingListItem):
     moments: list[MeetingMomentRead]
 
 
+class DashboardActionItem(ActionItemRead):
+    meeting_id: str
+    meeting_title: str
+
+
+class DashboardRead(ApiModel):
+    meetings: list[MeetingListItem]
+    open_action_items: list[DashboardActionItem]
+
+
 class MeetingCreate(ApiModel):
     title: str = Field(min_length=2, max_length=200)
     meeting_at_utc: datetime

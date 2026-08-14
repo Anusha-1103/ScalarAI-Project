@@ -102,3 +102,13 @@ export interface AccountProfile {
   avatarUrl: string | null;
   isDemo: boolean;
 }
+
+export interface DashboardActionItem extends ActionItem {
+  meetingId: string;
+  meetingTitle: string;
+}
+
+export interface DashboardData {
+  meetings: MeetingListItem[];
+  openActionItems: DashboardActionItem[];
+}

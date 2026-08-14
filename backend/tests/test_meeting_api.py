@@ -28,6 +28,25 @@ def test_seeded_meeting_library_and_detail(client: TestClient) -> None:
     assert len(detail["actionItems"]) >= 2
 
 
+def test_dashboard_returns_one_compact_workspace_payload(client: TestClient) -> None:
+    response = client.get("/api/v1/dashboard")
+
+    assert response.status_code == 200
+    dashboard = response.json()["data"]
+    assert len(dashboard["meetings"]) == 6
+    assert dashboard["openActionItems"]
+    assert all("transcriptSegments" not in meeting for meeting in dashboard["meetings"])
+    assert all(item["meetingId"] and item["meetingTitle"] for item in dashboard["openActionItems"])
+
+
+def test_api_responses_include_security_headers(client: TestClient) -> None:
+    response = client.get("/api/v1/health")
+
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+
+
 def test_library_search_filter_and_sort(client: TestClient) -> None:
     search_response = client.get("/api/v1/meetings", params={"search": "Northstar"})
     assert search_response.status_code == 200
@@ -87,6 +106,12 @@ def test_meeting_and_action_item_crud(client: TestClient) -> None:
     )
     assert complete_response.status_code == 200
     assert complete_response.json()["data"]["isCompleted"] is True
+
+    invalid_assignee_response = client.patch(
+        f"/api/v1/action-items/{action['id']}",
+        json={"assigneeParticipantId": "not-a-meeting-participant"},
+    )
+    assert invalid_assignee_response.status_code == 422
 
     delete_response = client.delete(f"/api/v1/meetings/{meeting['id']}")
     assert delete_response.status_code == 204
