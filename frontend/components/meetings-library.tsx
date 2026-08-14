@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDownUp, CalendarDays, ChevronRight, FileAudio2, Filter, Plus, RefreshCw, Search, Users } from "lucide-react";
+import { ArrowDownUp, AudioWaveform, CalendarDays, CheckCircle2, ChevronRight, Clock3, FileAudio2, Filter, ListChecks, Plus, RefreshCw, Search, Users } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useMemo, useState } from "react";
 
@@ -10,6 +10,16 @@ import { ImportMeetingDialog } from "@/components/import-meeting-dialog";
 import { SampleWorkspaceButton } from "@/components/sample-workspace-button";
 import { getMeetings } from "@/lib/api";
 import { formatDuration, formatMeetingDate } from "@/lib/format";
+
+function sourceLabel(sourceType: string) {
+  const normalized = sourceType.toLowerCase();
+  if (normalized.includes("zoom")) return "Zoom";
+  if (normalized.includes("meet")) return "Google Meet";
+  if (normalized.includes("team")) return "Microsoft Teams";
+  if (normalized.includes("upload") || normalized.includes("file")) return "Uploaded";
+  if (normalized.includes("paste") || normalized.includes("text")) return "Transcript";
+  return "Recorded";
+}
 
 export function MeetingsLibrary() {
   const [search, setSearch] = useState("");
@@ -30,12 +40,32 @@ export function MeetingsLibrary() {
   }, [dateFrom, dateTo, deferredSearch, participant, sortOrder]);
   const meetings = useQuery({ queryKey: ["meetings", params.toString()], queryFn: () => getMeetings(params) });
   const hasActiveFilters = Boolean(search.trim() || participant.trim() || dateFrom || dateTo);
+  const workspacePulse = useMemo(() => {
+    const items = meetings.data?.items ?? [];
+    const people = new Set(items.flatMap((meeting) => meeting.participants.map((person) => person.name)));
+    const totalSeconds = items.reduce((total, meeting) => total + meeting.durationInSeconds, 0);
+    const totalActions = items.reduce((total, meeting) => total + meeting.actionItemCount, 0);
+    const completedActions = items.reduce((total, meeting) => total + meeting.completedActionItemCount, 0);
+    return {
+      people: people.size,
+      totalSeconds,
+      openActions: Math.max(totalActions - completedActions, 0),
+      completion: totalActions ? Math.round((completedActions / totalActions) * 100) : 0,
+    };
+  }, [meetings.data?.items]);
 
   return (
     <section className="page meetings-page">
       <div className="page-heading">
-        <div><p className="eyebrow">Your workspace</p><h1>Meetings</h1><p className="page-subtitle">Review conversations, decisions, and follow-ups.</p></div>
+        <div><p className="eyebrow">Conversation library</p><h1>Meetings</h1><p className="page-subtitle">Every conversation, decision, and follow-up in one searchable workspace.</p></div>
         <button className="button button-primary" onClick={() => setImportOpen(true)}><Plus size={17} />Add meeting</button>
+      </div>
+
+      <div className="library-pulse" aria-label="Meeting workspace overview">
+        <div><span className="pulse-icon pulse-blue"><AudioWaveform size={18} /></span><span><small>Conversation time</small><strong>{formatDuration(workspacePulse.totalSeconds)}</strong></span></div>
+        <div><span className="pulse-icon pulse-cyan"><Users size={18} /></span><span><small>People captured</small><strong>{workspacePulse.people}</strong></span></div>
+        <div><span className="pulse-icon pulse-amber"><ListChecks size={18} /></span><span><small>Open follow-ups</small><strong>{workspacePulse.openActions}</strong></span></div>
+        <div><span className="pulse-icon pulse-green"><CheckCircle2 size={18} /></span><span><small>Completion rate</small><strong>{workspacePulse.completion}%</strong></span></div>
       </div>
 
       <div className="library-toolbar">
@@ -63,10 +93,10 @@ export function MeetingsLibrary() {
         {meetings.data?.items.map((meeting) => (
           <Link href={`/meetings/${meeting.id}`} className="meeting-row" key={meeting.id}>
             <div className="meeting-icon"><FileAudio2 size={18} /></div>
-            <div className="meeting-main"><h2>{meeting.title}</h2><p>{meeting.summaryPreview ?? "Transcript ready to review"}</p></div>
+            <div className="meeting-main"><div className="meeting-title-row"><h2>{meeting.title}</h2><span className="source-pill"><AudioWaveform size={11} />{sourceLabel(meeting.sourceType)}</span></div><p>{meeting.summaryPreview ?? "Transcript ready to review"}</p><span className="meeting-mobile-meta"><Clock3 size={12} />{formatDuration(meeting.durationInSeconds)} · {meeting.participants.length} people</span></div>
             <div className="meeting-people"><AvatarStack participants={meeting.participants} /><span>{meeting.participants.length} people</span></div>
             <div className="meeting-date"><strong>{formatMeetingDate(meeting.meetingAtUtc)}</strong><span>{formatDuration(meeting.durationInSeconds)}</span></div>
-            <div className="meeting-actions"><span className="task-progress"><i style={{ width: `${meeting.actionItemCount ? (meeting.completedActionItemCount / meeting.actionItemCount) * 100 : 0}%` }} /></span><span>{meeting.completedActionItemCount}/{meeting.actionItemCount} tasks</span><ChevronRight size={18} /></div>
+            <div className="meeting-actions"><span className="completion-ring" style={{ "--completion": `${meeting.actionItemCount ? (meeting.completedActionItemCount / meeting.actionItemCount) * 100 : 0}%` } as React.CSSProperties}><i /></span><span><strong>{meeting.completedActionItemCount}/{meeting.actionItemCount}</strong> tasks</span><ChevronRight size={18} /></div>
           </Link>
         ))}
       </div>
