@@ -5,9 +5,10 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 
 from app.common.database import async_session_factory
+from app.common.settings_config import get_settings
 from app.modules.meetings.meeting_models import Account, Meeting
 from app.modules.meetings.meeting_repository import MeetingRepository
-from app.modules.meetings.meeting_schemas import ActionItemCreate, MeetingCreate
+from app.modules.meetings.meeting_schemas import ActionItemCreate, MeetingCreate, MeetingUpdate
 from app.modules.meetings.meeting_service import MeetingService
 
 SEED_MEETINGS = [
@@ -15,6 +16,7 @@ SEED_MEETINGS = [
         "title": "Q3 Product Roadmap Review",
         "meeting_at_utc": datetime(2026, 8, 12, 10, 30, tzinfo=UTC),
         "participants": ["Maya Chen", "Arjun Mehta", "Sofia Reed"],
+        "tags": ["Product", "Roadmap"],
         "transcript": """Maya Chen: Thanks for joining. Today we need to lock the Q3 roadmap and resolve the onboarding priority.
 Arjun Mehta: Activation is still our biggest gap. Only forty-two percent of new workspaces invite a teammate in their first week.
 Sofia Reed: The interviews point to uncertainty, not lack of intent. People do not understand what the invited teammate will see.
@@ -35,6 +37,7 @@ Maya Chen: Agreed. We will review the flag data in the August twenty-first produ
         "title": "Northstar Customer Onboarding",
         "meeting_at_utc": datetime(2026, 8, 11, 8, 0, tzinfo=UTC),
         "participants": ["Leah Morgan", "Daniel Kim", "Priya Nair"],
+        "tags": ["Customer", "Onboarding"],
         "transcript": """Leah Morgan: Welcome to the kickoff. We will confirm goals, owners, and the first integration milestone.
 Daniel Kim: Our main goal is to reduce the manual handoff between sales and implementation.
 Priya Nair: The CRM export contains the required account fields, but contact roles are currently free text.
@@ -55,6 +58,7 @@ Leah Morgan: Perfect. Our checkpoint is Friday at the same time with import resu
         "title": "Mobile Experience Design Critique",
         "meeting_at_utc": datetime(2026, 8, 8, 12, 15, tzinfo=UTC),
         "participants": ["Sofia Reed", "Noah Williams", "Isha Kapoor"],
+        "tags": ["Design", "Mobile"],
         "transcript": """Sofia Reed: The goal today is to decide how the meeting summary behaves on small screens.
 Noah Williams: The current tabs hide too much context when someone jumps from a task into the transcript.
 Isha Kapoor: A bottom sheet would preserve context, but it becomes crowded once the keyboard opens.
@@ -75,6 +79,7 @@ Sofia Reed: Great. We will compare both versions in Thursday's usability session
         "title": "Senior Backend Engineer Debrief",
         "meeting_at_utc": datetime(2026, 8, 7, 6, 45, tzinfo=UTC),
         "participants": ["Riya Shah", "Owen Brooks", "Arjun Mehta"],
+        "tags": ["Hiring", "Engineering"],
         "transcript": """Riya Shah: Let us review the evidence against the role scorecard before making a recommendation.
 Owen Brooks: The candidate decomposed the billing problem well and asked useful questions about failure recovery.
 Arjun Mehta: I agreed with the architecture, especially starting with a modular monolith instead of services.
@@ -94,6 +99,7 @@ Riya Shah: We have a clear hire recommendation. I will consolidate feedback and 
         "title": "Engineering Weekly Sync",
         "meeting_at_utc": datetime(2026, 8, 5, 9, 30, tzinfo=UTC),
         "participants": ["Arjun Mehta", "Elena Rossi", "Marcus Lee"],
+        "tags": ["Engineering", "Weekly"],
         "transcript": """Arjun Mehta: We will start with release health, then blockers, then the database migration plan.
 Elena Rossi: Error rate is back below baseline after yesterday's cache configuration change.
 Marcus Lee: The worker backlog is stable, but the oldest job age still spikes during the morning import window.
@@ -114,6 +120,7 @@ Arjun Mehta: We will make the release decision tomorrow after the load test and 
         "title": "Launch Campaign Planning",
         "meeting_at_utc": datetime(2026, 8, 1, 11, 0, tzinfo=UTC),
         "participants": ["Ava Thompson", "Kabir Singh", "Maya Chen"],
+        "tags": ["Launch", "Marketing"],
         "transcript": """Ava Thompson: We need one launch narrative that works across the announcement, demo, and customer email.
 Kabir Singh: The strongest angle from beta feedback is getting decisions and follow-ups without replaying a call.
 Maya Chen: Keep the message concrete. Faster review is believable; promising perfect memory is not.
@@ -134,14 +141,18 @@ Ava Thompson: Great. Final copy review is Wednesday afternoon and launch remains
 
 
 async def provision_account_workspace(session, account: Account) -> None:
-    existing_titles = set(
-        await session.scalars(select(Meeting.title).where(Meeting.owner_account_id == account.id))
-    )
+    existing_meetings = {
+        meeting.title: meeting.id
+        for meeting in await session.scalars(
+            select(Meeting).where(Meeting.owner_account_id == account.id)
+        )
+    }
     repository = MeetingRepository(session)
     repository.account_id = account.id
     service = MeetingService(repository)
     for seed in SEED_MEETINGS:
-        if seed["title"] in existing_titles:
+        if meeting_id := existing_meetings.get(seed["title"]):
+            await service.update_meeting(meeting_id, MeetingUpdate(tags=seed["tags"]))
             continue
         detail = await service.create_meeting(
             MeetingCreate(
@@ -149,6 +160,7 @@ async def provision_account_workspace(session, account: Account) -> None:
                 meeting_at_utc=seed["meeting_at_utc"],
                 participant_names=seed["participants"],
                 transcript=seed["transcript"],
+                tags=seed["tags"],
             ),
             analyze_with_ai=False,
             generate_actions=False,
@@ -170,7 +182,19 @@ async def provision_account_workspace(session, account: Account) -> None:
 
 async def seed_database() -> None:
     async with async_session_factory() as session:
+        settings = get_settings()
         if (await session.scalar(select(func.count(Meeting.id)))) or 0:
+            account = await session.scalar(
+                select(Account)
+                .where(
+                    (Account.email == settings.demo_account_email)
+                    | (Account.auth_user_id.is_(None))
+                )
+                .order_by(Account.created_at_utc)
+                .limit(1)
+            )
+            if account:
+                await provision_account_workspace(session, account)
             return
 
         account = Account(

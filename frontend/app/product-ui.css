@@ -1298,6 +1298,222 @@ h3 {
   }
 }
 
+/* Persisted dark appearance */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e8eef8;
+  --muted: #9aa8bb;
+  --faint: #728198;
+  --line: #263247;
+  --line-strong: #344158;
+  --surface: #111a2a;
+  --surface-soft: #09111f;
+  --surface-hover: #18243a;
+  --sidebar: #0c1524;
+  --primary: #6ea8fe;
+  --primary-hover: #8bb9ff;
+  --primary-soft: #172b4d;
+  --green: #43d3aa;
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.22), 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="dark"] html,
+[data-theme="dark"] body,
+[data-theme="dark"] .app-frame,
+[data-theme="dark"] .main-area,
+[data-theme="dark"] .meeting-detail-page,
+[data-theme="dark"] .ask-page {
+  color: var(--ink);
+  background: var(--surface-soft);
+}
+
+[data-theme="dark"] .sidebar {
+  border-right-color: var(--line);
+  background: var(--sidebar);
+}
+
+[data-theme="dark"] .topbar {
+  border-bottom-color: var(--line);
+  background: rgba(17, 26, 42, 0.96);
+}
+
+[data-theme="dark"] .ask-header {
+  border-bottom-color: var(--line);
+  background: var(--surface);
+}
+
+[data-theme="dark"] .nav-item {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .nav-item:hover,
+[data-theme="dark"] .nav-item-active {
+  color: #9cc3ff;
+  background: #162b4d;
+}
+
+[data-theme="dark"] .global-search,
+[data-theme="dark"] .search-field,
+[data-theme="dark"] .filter-field,
+[data-theme="dark"] .toolbar-button,
+[data-theme="dark"] .date-filter-panel,
+[data-theme="dark"] .smart-filters,
+[data-theme="dark"] .detail-tabs,
+[data-theme="dark"] .meeting-list-header,
+[data-theme="dark"] .dashboard-section > header,
+[data-theme="dark"] .agenda-list h2,
+[data-theme="dark"] .people-table > header {
+  border-color: var(--line);
+  color: var(--muted);
+  background: #111c2e;
+}
+
+[data-theme="dark"] .profile-menu,
+[data-theme="dark"] .profile-menu > a,
+[data-theme="dark"] .profile-menu > button,
+[data-theme="dark"] .meeting-list,
+[data-theme="dark"] .library-pulse,
+[data-theme="dark"] .metric-strip,
+[data-theme="dark"] .dashboard-section,
+[data-theme="dark"] .meeting-detail-header,
+[data-theme="dark"] .insights-panel,
+[data-theme="dark"] .transcript-panel,
+[data-theme="dark"] .transcript-header,
+[data-theme="dark"] .transcript-search,
+[data-theme="dark"] .modal,
+[data-theme="dark"] .inline-dialog,
+[data-theme="dark"] .search-dialog,
+[data-theme="dark"] .ask-suggestions button,
+[data-theme="dark"] .ask-composer,
+[data-theme="dark"] .agenda-layout > aside,
+[data-theme="dark"] .agenda-list section,
+[data-theme="dark"] .people-table,
+[data-theme="dark"] .integration-grid,
+[data-theme="dark"] .settings-layout > section,
+[data-theme="dark"] .button-secondary,
+[data-theme="dark"] .completion-ring i {
+  border-color: var(--line);
+  color: var(--ink);
+  background: var(--surface);
+}
+
+[data-theme="dark"] .meeting-row,
+[data-theme="dark"] .dashboard-task-list > a,
+[data-theme="dark"] .recent-meeting,
+[data-theme="dark"] .people-table > div,
+[data-theme="dark"] .integration-grid article {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .meeting-row:hover,
+[data-theme="dark"] .dashboard-task-list > a:hover,
+[data-theme="dark"] .recent-meeting:hover,
+[data-theme="dark"] .transcript-segment:hover,
+[data-theme="dark"] .people-table > div:hover,
+[data-theme="dark"] .agenda-list a:hover {
+  background: var(--surface-hover);
+}
+
+[data-theme="dark"] .detail-tabs button.active,
+[data-theme="dark"] .transcript-segment.active {
+  border-color: #31517d;
+  color: #9cc3ff;
+  background: #162b4d;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .summary-overview,
+[data-theme="dark"] .smart-filters button.active,
+[data-theme="dark"] .meeting-title-kicker span,
+[data-theme="dark"] .source-pill {
+  border-color: #31517d;
+  color: #9cc3ff;
+  background: #142946;
+}
+
+[data-theme="dark"] .meeting-title-kicker span:last-child {
+  color: var(--muted);
+  background: #1b2638;
+}
+
+[data-theme="dark"] .meeting-title-kicker .meeting-tag,
+[data-theme="dark"] .meeting-tags > span {
+  color: #7ce1bf;
+  background: #12362f;
+}
+
+[data-theme="dark"] .action-progress-summary {
+  border-color: #245447;
+  color: #8fc7b7;
+  background: #102b27;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select,
+[data-theme="dark"] .meeting-form input,
+[data-theme="dark"] .meeting-form textarea,
+[data-theme="dark"] .settings-layout input,
+[data-theme="dark"] .settings-layout select,
+[data-theme="dark"] .compact-filter {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  background: #0d1728;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #64748b;
+}
+
+[data-theme="dark"] .meeting-title-row h2,
+[data-theme="dark"] .meeting-title-block h1,
+[data-theme="dark"] .library-pulse strong,
+[data-theme="dark"] .meeting-date strong,
+[data-theme="dark"] .meeting-actions > span:nth-child(2) strong,
+[data-theme="dark"] .summary-overview .overview,
+[data-theme="dark"] .overview,
+[data-theme="dark"] .segment-text,
+[data-theme="dark"] .key-points li,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] strong {
+  color: var(--ink);
+}
+
+[data-theme="dark"] .meeting-main > p,
+[data-theme="dark"] .page-subtitle,
+[data-theme="dark"] .meeting-meta,
+[data-theme="dark"] .meeting-people > span,
+[data-theme="dark"] .meeting-date > span,
+[data-theme="dark"] .workspace-live,
+[data-theme="dark"] .library-pulse small {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .echo-response > div > p,
+[data-theme="dark"] .ask-header p:last-child,
+[data-theme="dark"] .ask-welcome {
+  color: var(--muted);
+}
+
+[data-theme="dark"] .answer-sources a {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .meeting-chart {
+  background-image: repeating-linear-gradient(to top, transparent 0, transparent 47px, #223047 48px);
+}
+
+[data-theme="dark"] ::selection {
+  color: #e9f2ff;
+  background: #28528a;
+}
+
 /* Product depth pass */
 .page {
   width: min(1380px, 100%);
@@ -1628,6 +1844,48 @@ h3 {
 .meeting-title-kicker span:last-child {
   color: #677489;
   background: #f0f2f5;
+}
+
+.meeting-title-kicker .meeting-tag,
+.meeting-tags > span {
+  color: #27624f;
+  background: #eaf7f2;
+}
+
+.meeting-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.meeting-tags > span {
+  height: 19px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 8px;
+  font-weight: 680;
+}
+
+.compact-filter {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: var(--surface);
+}
+
+.date-filter-panel .compact-filter input {
+  height: 30px;
+  border: 0;
+  background: transparent;
+  outline: 0;
 }
 
 .meeting-detail-grid {

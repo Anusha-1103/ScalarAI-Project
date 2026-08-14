@@ -14,6 +14,7 @@ from app.modules.meetings.meeting_models import (
     MeetingSummary,
     Participant,
     SummaryKeyPoint,
+    Tag,
     TranscriptSegment,
 )
 from app.modules.meetings.meeting_repository import MeetingRepository
@@ -82,6 +83,7 @@ class MeetingService:
             duration_in_seconds=meeting.duration_in_seconds,
             source_type=meeting.source_type,
             participants=participants,
+            tags=sorted(tag.name for tag in meeting.tags),
             summary_preview=meeting.summary.overview if meeting.summary else None,
             action_item_count=len(meeting.action_items),
             completed_action_item_count=sum(item.is_completed for item in meeting.action_items),
@@ -146,6 +148,7 @@ class MeetingService:
         *,
         search: str | None,
         participant: str | None,
+        tag: str | None,
         date_from: datetime | None,
         date_to: datetime | None,
         sort_order: str,
@@ -155,6 +158,7 @@ class MeetingService:
         meetings, total = await self.repository.list_meetings(
             search=search,
             participant=participant,
+            tag=tag,
             date_from=date_from,
             date_to=date_to,
             sort_order=sort_order,
@@ -202,6 +206,28 @@ class MeetingService:
         self.repository.add(participant)
         await self.repository.flush()
         return participant
+
+    async def _get_or_create_tags(self, names: list[str]) -> list[Tag]:
+        account = await self.repository.resolve_account()
+        tags: list[Tag] = []
+        seen: set[str] = set()
+        for name in names:
+            cleaned = name.strip()
+            normalized = cleaned.casefold()
+            if not cleaned or normalized in seen:
+                continue
+            seen.add(normalized)
+            tag = await self.repository.find_tag(normalized)
+            if not tag:
+                tag = Tag(
+                    owner_account_id=account.id,
+                    name=cleaned,
+                    normalized_name=normalized,
+                )
+                self.repository.add(tag)
+                await self.repository.flush()
+            tags.append(tag)
+        return tags
 
     async def create_meeting(
         self,
@@ -252,6 +278,7 @@ class MeetingService:
             )
             for index, item in enumerate(parsed)
         ]
+        meeting.tags = await self._get_or_create_tags(payload.tags)
         analysis = await self.ai.analyze(parsed, use_ai=analyze_with_ai)
         meeting.summary = MeetingSummary(
             overview=analysis.overview,
@@ -300,6 +327,8 @@ class MeetingService:
             names = list(
                 dict.fromkeys(name.strip() for name in updates["participant_names"] if name.strip())
             )
+            meeting.participants.clear()
+            await self.repository.flush()
             meeting.participants = [
                 MeetingParticipant(
                     participant=await self._get_or_create_participant(name, index),
@@ -307,6 +336,8 @@ class MeetingService:
                 )
                 for index, name in enumerate(names)
             ]
+        if "tags" in updates:
+            meeting.tags = await self._get_or_create_tags(updates["tags"])
         await self.repository.commit()
         updated = await self.repository.get_meeting(meeting_id)
         return self._detail(updated)  # type: ignore[arg-type]

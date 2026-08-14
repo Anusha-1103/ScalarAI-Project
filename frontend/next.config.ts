@@ -9,7 +9,7 @@ function origin(value: string | undefined): string | null {
   }
 }
 
-const apiOrigin = origin(process.env.NEXT_PUBLIC_API_URL);
+const apiOrigin = origin(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1");
 const supabaseOrigin = origin(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const connectSources = ["'self'", apiOrigin, supabaseOrigin, supabaseOrigin?.replace("https://", "wss://")]
   .filter(Boolean)

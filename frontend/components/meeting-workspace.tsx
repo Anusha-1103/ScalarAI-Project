@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Search,
   Sparkles,
+  Tag,
   Trash2,
   Users,
   X,
@@ -139,11 +140,13 @@ function EditMeetingDialog({ meeting, onClose }: { meeting: MeetingDetail; onClo
   const [title, setTitle] = useState(meeting.title);
   const [date, setDate] = useState(new Date(meeting.meetingAtUtc).toISOString().slice(0, 16));
   const [participants, setParticipants] = useState(meeting.participants.map((person) => person.name).join(", "));
+  const [tags, setTags] = useState(meeting.tags.join(", "));
   const mutation = useMutation({
     mutationFn: () => updateMeeting(meeting.id, {
       title: title.trim(),
       meetingAtUtc: new Date(date).toISOString(),
       participantNames: participants.split(",").map((name) => name.trim()).filter(Boolean),
+      tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
     }),
     onSuccess: (updated) => {
       queryClient.setQueryData(["meeting", meeting.id], updated);
@@ -165,6 +168,7 @@ function EditMeetingDialog({ meeting, onClose }: { meeting: MeetingDetail; onClo
           <label>Title<input required minLength={2} value={title} onChange={(event) => setTitle(event.target.value)} /></label>
           <label>Date and time<input required type="datetime-local" value={date} onChange={(event) => setDate(event.target.value)} /></label>
           <label>Participants<input required value={participants} onChange={(event) => setParticipants(event.target.value)} /><span className="field-hint">Separate names with commas</span></label>
+          <label>Tags<input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="Product, Weekly" /><span className="field-hint">Optional · separate tags with commas</span></label>
           <div className="modal-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancel</button><button className="button button-primary" disabled={mutation.isPending}><Check size={16} />Save changes</button></div>
         </form>
       </section>
@@ -287,7 +291,7 @@ export function MeetingWorkspace({ meetingId }: { meetingId: string }) {
     <div className="meeting-detail-page">
       <header className="meeting-detail-header">
         <Link className="icon-button" href="/meetings" aria-label="Back to meetings"><ArrowLeft size={19} /></Link>
-        <div className="meeting-title-block"><div className="meeting-title-kicker"><span><Sparkles size={11} />AI notes ready</span><span>{formatSourceType(meeting.sourceType)}</span></div><h1>{meeting.title}</h1><div className="meeting-meta"><span><CalendarDays size={14} />{formatMeetingDate(meeting.meetingAtUtc)}</span><span><Clock3 size={14} />{formatTimestamp(meeting.durationInSeconds)}</span><span><Users size={14} />{meeting.participants.length} attendees</span></div></div>
+        <div className="meeting-title-block"><div className="meeting-title-kicker"><span><Sparkles size={11} />AI notes ready</span><span>{formatSourceType(meeting.sourceType)}</span>{meeting.tags.map((tag) => <span className="meeting-tag" key={tag}><Tag size={10} />{tag}</span>)}</div><h1>{meeting.title}</h1><div className="meeting-meta"><span><CalendarDays size={14} />{formatMeetingDate(meeting.meetingAtUtc)}</span><span><Clock3 size={14} />{formatTimestamp(meeting.durationInSeconds)}</span><span><Users size={14} />{meeting.participants.length} attendees</span></div></div>
         <AvatarStack participants={meeting.participants} />
         <button className="button button-secondary detail-action" type="button" onClick={exportNotes}><Download size={16} />Export</button>
         <button className="icon-button detail-action" type="button" title="Edit meeting" aria-label="Edit meeting" onClick={() => setEditOpen(true)}><Pencil size={16} /></button>

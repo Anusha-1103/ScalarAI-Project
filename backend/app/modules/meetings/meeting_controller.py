@@ -72,6 +72,7 @@ async def list_meetings(
     service: MeetingServiceDependency,
     search: str | None = Query(default=None, max_length=100),
     participant: str | None = Query(default=None, max_length=100),
+    tag: str | None = Query(default=None, max_length=50),
     date_from: datetime | None = Query(default=None, alias="dateFrom"),
     date_to: datetime | None = Query(default=None, alias="dateTo"),
     sort_order: Literal["asc", "desc"] = Query(default="desc", alias="sortOrder"),
@@ -81,6 +82,7 @@ async def list_meetings(
     items, total = await service.list_meetings(
         search=search,
         participant=participant,
+        tag=tag,
         date_from=date_from,
         date_to=date_to,
         sort_order=sort_order,
@@ -123,6 +125,7 @@ async def import_meeting(
     meeting_at_utc: Annotated[datetime, Form(alias="meetingAtUtc")],
     participant_names: Annotated[str, Form(alias="participantNames")],
     transcript_file: Annotated[UploadFile, File(alias="transcriptFile")],
+    tag_names: Annotated[str | None, Form(alias="tagNames")] = None,
 ) -> ApiResponse[MeetingDetail]:
     extension = Path(transcript_file.filename or "transcript.txt").suffix.lower().lstrip(".")
     if extension not in {"txt", "vtt", "json"}:
@@ -137,6 +140,7 @@ async def import_meeting(
     try:
         content = raw.decode("utf-8")
         names_payload = json.loads(participant_names)
+        tags_payload = json.loads(tag_names) if tag_names else []
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ApplicationError(
             "INVALID_TRANSCRIPT_UPLOAD",
@@ -145,11 +149,14 @@ async def import_meeting(
         ) from error
     if not isinstance(names_payload, list):
         raise ApplicationError("INVALID_PARTICIPANTS", "Participant names must be an array", 422)
+    if not isinstance(tags_payload, list):
+        raise ApplicationError("INVALID_TAGS", "Tag names must be an array", 422)
     payload = MeetingCreate(
         title=title,
         meeting_at_utc=meeting_at_utc,
         participant_names=[str(name) for name in names_payload],
         transcript=content,
+        tags=[str(name) for name in tags_payload],
     )
     return ApiResponse(data=await service.create_meeting(payload, file_type=extension))
 

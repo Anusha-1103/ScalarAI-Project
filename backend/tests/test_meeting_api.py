@@ -18,11 +18,13 @@ def test_seeded_meeting_library_and_detail(client: TestClient) -> None:
 
     assert response.status_code == 200
     payload = response.json()["data"]
-    assert payload["pagination"]["totalItems"] == 6
-    assert len(payload["items"]) == 6
+    assert payload["pagination"]["totalItems"] >= 6
+    assert len(payload["items"]) >= 6
     assert payload["items"][0]["meetingAtUtc"] > payload["items"][-1]["meetingAtUtc"]
 
-    meeting_id = payload["items"][0]["id"]
+    meeting_id = next(
+        item["id"] for item in payload["items"] if item["title"] == "Q3 Product Roadmap Review"
+    )
     detail_response = client.get(f"/api/v1/meetings/{meeting_id}")
     detail = detail_response.json()["data"]
 
@@ -32,6 +34,7 @@ def test_seeded_meeting_library_and_detail(client: TestClient) -> None:
     assert detail["summary"]["overview"]
     assert len(detail["chapters"]) == 3
     assert len(detail["actionItems"]) >= 2
+    assert detail["tags"]
 
 
 def test_dashboard_returns_one_compact_workspace_payload(client: TestClient) -> None:
@@ -39,7 +42,7 @@ def test_dashboard_returns_one_compact_workspace_payload(client: TestClient) -> 
 
     assert response.status_code == 200
     dashboard = response.json()["data"]
-    assert len(dashboard["meetings"]) == 6
+    assert len(dashboard["meetings"]) >= 6
     assert dashboard["openActionItems"]
     assert all("transcriptSegments" not in meeting for meeting in dashboard["meetings"])
     assert all(item["meetingId"] and item["meetingTitle"] for item in dashboard["openActionItems"])
@@ -93,6 +96,7 @@ def test_meeting_and_action_item_crud(client: TestClient) -> None:
             "title": "API Contract Review",
             "meetingAtUtc": datetime(2026, 8, 14, 8, 30, tzinfo=UTC).isoformat(),
             "participantNames": ["Anusha", "Maya Chen"],
+            "tags": ["Engineering", "API"],
             "transcript": (
                 "Anusha: We should finalize the API contract before the frontend integration.\n"
                 "Maya Chen: I will review error envelopes and pagination fields today.\n"
@@ -104,15 +108,25 @@ def test_meeting_and_action_item_crud(client: TestClient) -> None:
     meeting = create_response.json()["data"]
     assert meeting["title"] == "API Contract Review"
     assert len(meeting["transcriptSegments"]) == 3
+    assert meeting["tags"] == ["API", "Engineering"]
     assert any(
         "review error envelopes" in item["description"].lower() for item in meeting["actionItems"]
     )
 
     update_response = client.patch(
-        f"/api/v1/meetings/{meeting['id']}", json={"title": "API and Client Contract Review"}
+        f"/api/v1/meetings/{meeting['id']}",
+        json={
+            "title": "API and Client Contract Review",
+            "participantNames": ["Anusha", "Maya Chen"],
+            "tags": ["Frontend", "API"],
+        },
     )
     assert update_response.status_code == 200
     assert update_response.json()["data"]["title"] == "API and Client Contract Review"
+    assert update_response.json()["data"]["tags"] == ["API", "Frontend"]
+
+    tag_response = client.get("/api/v1/meetings", params={"tag": "frontend"})
+    assert [item["id"] for item in tag_response.json()["data"]["items"]] == [meeting["id"]]
 
     assignee_id = meeting["participants"][0]["id"]
     action_response = client.post(

@@ -13,6 +13,7 @@ export interface MeetingListItem {
   durationInSeconds: number;
   sourceType: string;
   participants: Participant[];
+  tags: string[];
   summaryPreview: string | null;
   actionItemCount: number;
   completedActionItemCount: number;
@@ -70,6 +71,7 @@ export interface MeetingUpdateInput {
   title?: string;
   meetingAtUtc?: string;
   participantNames?: string[];
+  tags?: string[];
 }
 
 export interface ActionItemInput {

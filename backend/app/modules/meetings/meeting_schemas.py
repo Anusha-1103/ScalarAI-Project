@@ -84,6 +84,7 @@ class MeetingListItem(ApiModel):
     duration_in_seconds: int
     source_type: str
     participants: list[ParticipantRead]
+    tags: list[str]
     summary_preview: str | None
     action_item_count: int
     completed_action_item_count: int
@@ -114,6 +115,7 @@ class MeetingCreate(ApiModel):
     participant_names: list[str] = Field(min_length=1, max_length=20)
     transcript: str = Field(min_length=10, max_length=200_000)
     duration_in_seconds: int | None = Field(default=None, ge=0, le=86_400)
+    tags: list[str] = Field(default_factory=list, max_length=10)
 
     @field_validator("participant_names")
     @classmethod
@@ -123,11 +125,30 @@ class MeetingCreate(ApiModel):
             raise ValueError("At least one participant is required")
         return list(dict.fromkeys(cleaned))
 
+    @field_validator("tags")
+    @classmethod
+    def validate_tags(cls, values: list[str]) -> list[str]:
+        cleaned = [value.strip() for value in values if value.strip()]
+        if any(len(value) > 50 for value in cleaned):
+            raise ValueError("Tags must be 50 characters or fewer")
+        return list(dict.fromkeys(cleaned))
+
 
 class MeetingUpdate(ApiModel):
     title: str | None = Field(default=None, min_length=2, max_length=200)
     meeting_at_utc: datetime | None = None
     participant_names: list[str] | None = Field(default=None, min_length=1, max_length=20)
+    tags: list[str] | None = Field(default=None, max_length=10)
+
+    @field_validator("tags")
+    @classmethod
+    def validate_tags(cls, values: list[str] | None) -> list[str] | None:
+        if values is None:
+            return None
+        cleaned = [value.strip() for value in values if value.strip()]
+        if any(len(value) > 50 for value in cleaned):
+            raise ValueError("Tags must be 50 characters or fewer")
+        return list(dict.fromkeys(cleaned))
 
 
 class ActionItemCreate(ApiModel):

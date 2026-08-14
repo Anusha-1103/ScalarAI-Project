@@ -9,7 +9,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-Python-059669?style=flat-square&logo=fastapi)
 ![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20PostgreSQL-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
 ![Groq](https://img.shields.io/badge/Groq-grounded%20AI-F55036?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-15%20passing-0F9D78?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-18%20passing-0F9D78?style=flat-square)
 
 EchoNote turns meeting transcripts into an operational workspace. Teams can review synchronized conversations, generate AI notes and chapters, track assigned actions, search exact moments, and ask questions that remain grounded in source evidence.
 
@@ -32,7 +32,7 @@ The demo tenant contains realistic product, customer, design, hiring, engineerin
 
 | Area | What works |
 | --- | --- |
-| Meeting library | Search by title or participant, filter by date, sort by recency, and inspect task progress |
+| Meeting library | Search by title, participant, or tag; filter by date, participant, and persisted tags; sort by recency; and inspect task progress |
 | Transcript ingestion | Paste dialogue or upload UTF-8 TXT, WebVTT, and structured JSON transcripts |
 | Meeting intelligence | Groq generates summaries, key points, chapters, and explicitly owned action items |
 | Ask Echo | Answers natural-language questions from tenant-scoped transcript evidence with timestamp sources |
@@ -41,6 +41,7 @@ The demo tenant contains realistic product, customer, design, hiring, engineerin
 | Insights | Review speaker time, recurring topics, task signals, questions, metrics, and conversation tone |
 | Workspace views | Use the dashboard, calendar, people directory, settings, and global search |
 | Export | Download meeting notes and action items as Markdown |
+| Appearance | Switch between light and dark workspaces with a preference that survives reloads |
 | Responsive UI | Use the complete workspace across desktop and mobile layouts |
 
 Provider integrations are presented as staged connection workflows. Production Google Calendar, Microsoft Teams, Zoom, and Slack data exchange requires each provider's OAuth credentials.
@@ -107,6 +108,8 @@ Groq runs exclusively from the backend and receives only the transcript context 
 | `Chapter` | Provides a timestamped meeting outline |
 | `ActionItem` | Tracks ownership, due date, and completion state |
 | `MeetingMoment` | Persists important transcript bookmarks and notes |
+| `Tag` | Stores tenant-scoped reusable meeting labels |
+| `MeetingTag` | Connects meetings to persisted tags for filtering and discovery |
 
 ## API Surface
 
@@ -115,7 +118,7 @@ Every JSON response follows `{ success, data, error }`.
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/v1/me` | Resolve the authenticated application account |
-| `GET`, `POST` | `/api/v1/meetings` | List, filter, or create meetings |
+| `GET`, `POST` | `/api/v1/meetings` | List, filter by participant/date/tag, or create meetings |
 | `POST` | `/api/v1/meetings/import` | Import TXT, VTT, or JSON transcripts |
 | `GET`, `PATCH`, `DELETE` | `/api/v1/meetings/{id}` | Read, update, or soft-delete a meeting |
 | `POST` | `/api/v1/meetings/{id}/action-items` | Add a meeting action |
@@ -192,7 +195,7 @@ uv run ruff check .
 uv run pytest
 ```
 
-Current baseline: **10 backend tests and 5 frontend tests passing**, plus clean lint, type checking, formatting, production build, and live browser verification.
+Current baseline: **13 backend tests and 5 frontend tests passing**, plus clean lint, type checking, formatting, production build, and live browser verification.
 
 ## Repository Layout
 

@@ -20,11 +20,16 @@ export function ImportMeetingDialog({ open, onClose }: { open: boolean; onClose:
         .split(",")
         .map((name) => name.trim())
         .filter(Boolean);
+      const tags = String(data.get("tags") ?? "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
       if (mode === "file") {
         const upload = new FormData();
         upload.set("title", String(data.get("title")));
         upload.set("meetingAtUtc", new Date(String(data.get("meetingAtUtc"))).toISOString());
         upload.set("participantNames", JSON.stringify(names));
+        upload.set("tagNames", JSON.stringify(tags));
         upload.set("transcriptFile", data.get("transcriptFile") as File);
         return apiRequest<MeetingDetail>("/meetings/import", { method: "POST", body: upload });
       }
@@ -34,6 +39,7 @@ export function ImportMeetingDialog({ open, onClose }: { open: boolean; onClose:
           title: data.get("title"),
           meetingAtUtc: new Date(String(data.get("meetingAtUtc"))).toISOString(),
           participantNames: names,
+          tags,
           transcript: data.get("transcript"),
         }),
       });
@@ -70,6 +76,7 @@ export function ImportMeetingDialog({ open, onClose }: { open: boolean; onClose:
           <label>Date and time<input name="meetingAtUtc" type="datetime-local" required /></label>
           <label>Participants<input name="participants" required placeholder="Anusha, Maya" /></label>
         </div>
+        <label>Tags <span className="field-hint">Optional · separate with commas</span><input name="tags" maxLength={250} placeholder="Product, Customer, Weekly" /></label>
         {mode === "paste" ? (
           <label>Transcript<textarea name="transcript" required minLength={10} rows={9} placeholder={"Anusha: Let's review the launch plan.\nMaya: I will share the final checklist today."} /></label>
         ) : (

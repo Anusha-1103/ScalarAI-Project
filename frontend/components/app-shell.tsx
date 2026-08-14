@@ -9,10 +9,12 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
   Puzzle,
   Search,
   Settings,
   Sparkles,
+  Sun,
   UserRound,
   Users,
   X,
@@ -57,12 +59,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profile = useQuery({
     queryKey: ["profile"],
     queryFn: getProfile,
     enabled: !pathname.startsWith("/auth"),
   });
+
+  useEffect(() => {
+    setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -125,6 +132,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     window.location.assign("/auth/sign-in");
   }
 
+  function toggleTheme() {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = nextTheme;
+    window.localStorage.setItem("echonote-theme", nextTheme);
+    setTheme(nextTheme);
+  }
+
   return (
     <div className="app-frame">
       <aside id="workspace-navigation" className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
@@ -182,6 +196,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Search size={17} /><span>Search across meetings</span><kbd>⌘ K</kbd>
           </button>
           <div className="topbar-actions">
+            <button className="icon-button theme-toggle" type="button" title={`Use ${theme === "dark" ? "light" : "dark"} mode`} aria-label={`Use ${theme === "dark" ? "light" : "dark"} mode`} onClick={toggleTheme}>{theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}</button>
             <button className="icon-button notification-button" title="Notifications" aria-label="Notifications" onClick={() => toast.success("You're all caught up")}><Bell size={18} /><i /></button>
             <div className="profile-menu-wrap" ref={profileMenuRef}>
               <button className="topbar-profile" type="button" title={displayName} aria-haspopup="menu" aria-expanded={profileMenuOpen} onClick={() => setProfileMenuOpen((open) => !open)}><span className="topbar-avatar">{initial}</span></button>

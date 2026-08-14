@@ -15,6 +15,7 @@ from app.modules.meetings.meeting_models import (
     MeetingParticipant,
     MeetingSummary,
     Participant,
+    Tag,
     TranscriptSegment,
 )
 
@@ -83,6 +84,7 @@ class MeetingRepository:
             selectinload(Meeting.chapters),
             selectinload(Meeting.action_items),
             selectinload(Meeting.moments),
+            selectinload(Meeting.tags),
         )
 
     @staticmethod
@@ -91,6 +93,7 @@ class MeetingRepository:
             selectinload(Meeting.participants).selectinload(MeetingParticipant.participant),
             selectinload(Meeting.summary).noload(MeetingSummary.key_points),
             selectinload(Meeting.action_items),
+            selectinload(Meeting.tags),
             noload(Meeting.transcript_segments),
             noload(Meeting.chapters),
             noload(Meeting.moments),
@@ -101,6 +104,7 @@ class MeetingRepository:
         *,
         search: str | None,
         participant: str | None,
+        tag: str | None,
         date_from: datetime | None,
         date_to: datetime | None,
         sort_order: str,
@@ -120,9 +124,17 @@ class MeetingRepository:
             )
         if search:
             pattern = f"%{search.strip()}%"
-            query = query.where(or_(Meeting.title.ilike(pattern), Participant.name.ilike(pattern)))
+            query = query.where(
+                or_(
+                    Meeting.title.ilike(pattern),
+                    Participant.name.ilike(pattern),
+                    Meeting.tags.any(Tag.name.ilike(pattern)),
+                )
+            )
         if participant:
             query = query.where(Participant.name.ilike(f"%{participant.strip()}%"))
+        if tag:
+            query = query.where(Meeting.tags.any(Tag.normalized_name == tag.strip().casefold()))
         if date_from:
             query = query.where(Meeting.meeting_at_utc >= date_from)
         if date_to:
@@ -175,6 +187,15 @@ class MeetingRepository:
                 Meeting.owner_account_id == owner_id,
             )
             .limit(1)
+        )
+
+    async def find_tag(self, normalized_name: str) -> Tag | None:
+        owner_id = await self._owner_id()
+        return await self.session.scalar(
+            select(Tag).where(
+                Tag.owner_account_id == owner_id,
+                Tag.normalized_name == normalized_name,
+            )
         )
 
     async def get_default_account(self) -> Account | None:

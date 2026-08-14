@@ -93,6 +93,12 @@ class Meeting(TimestampMixin, Base):
         order_by="MeetingMoment.created_at_utc",
         lazy="selectin",
     )
+    tags: Mapped[list[Tag]] = relationship(
+        secondary="MeetingTag",
+        back_populates="meetings",
+        order_by="Tag.name",
+        lazy="selectin",
+    )
 
 
 class Participant(TimestampMixin, Base):
@@ -102,6 +108,34 @@ class Participant(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(120), index=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     avatar_color: Mapped[str] = mapped_column("avatarColor", String(20), default="#5865F2")
+
+
+class Tag(TimestampMixin, Base):
+    __tablename__ = "Tag"
+    __table_args__ = (
+        UniqueConstraint("ownerAccountId", "normalizedName"),
+        Index("idx_tag_owner_name", "ownerAccountId", "normalizedName"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    owner_account_id: Mapped[str] = mapped_column(
+        "ownerAccountId", ForeignKey("Account.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(50))
+    normalized_name: Mapped[str] = mapped_column("normalizedName", String(50))
+
+    meetings: Mapped[list[Meeting]] = relationship(secondary="MeetingTag", back_populates="tags")
+
+
+class MeetingTag(Base):
+    __tablename__ = "MeetingTag"
+
+    meeting_id: Mapped[str] = mapped_column(
+        "meetingId", ForeignKey("Meeting.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_id: Mapped[str] = mapped_column(
+        "tagId", ForeignKey("Tag.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
 
 
 class MeetingParticipant(Base):
